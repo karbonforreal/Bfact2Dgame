@@ -36,8 +36,8 @@ const maps = [
     height: 18,
     walls: [
       [0, 0, 28, 1], [0, 17, 28, 1], [0, 0, 1, 18], [27, 0, 1, 18],
-      [4, 4, 16, 1], [4, 4, 1, 9], [8, 8, 1, 9], [12, 1, 1, 8],
-      [16, 7, 1, 10], [20, 2, 1, 9], [23, 8, 1, 8],
+      [4, 4, 16, 1], [4, 4, 1, 9], [8, 8, 1, 9], [12, 5, 1, 4],
+      [16, 7, 1, 10], [20, 6, 1, 5], [23, 8, 1, 8],
       [5, 12, 13, 1], [15, 15, 10, 1]
     ],
     enemies: [
@@ -129,10 +129,12 @@ function startMap(index, keepPlayerState = true) {
   const armor = keepPlayerState ? prev.armor : 40;
   const reserve = keepPlayerState ? prev.reserveAmmo : 60;
 
+  const playerSpawn = findNearestOpenPoint(map.spawn.x * TILE, map.spawn.y * TILE, PLAYER_RADIUS);
+
   game.player = {
     ...prev,
-    x: map.spawn.x * TILE,
-    y: map.spawn.y * TILE,
+    x: playerSpawn.x,
+    y: playerSpawn.y,
     hp,
     armor,
     reserveAmmo: reserve,
@@ -142,15 +144,18 @@ function startMap(index, keepPlayerState = true) {
     invulnerable: 0.4
   };
 
-  game.enemies = map.enemies.map((e, i) => ({
-    id: `${index}-${i}`,
-    x: e.x * TILE,
-    y: e.y * TILE,
-    hp: e.hp,
-    maxHp: e.hp,
-    speed: 120 + Math.random() * 20,
-    cooldown: Math.random() * 0.8
-  }));
+  game.enemies = map.enemies.map((e, i) => {
+    const safeSpawn = findNearestOpenPoint(e.x * TILE, e.y * TILE, 16);
+    return {
+      id: `${index}-${i}`,
+      x: safeSpawn.x,
+      y: safeSpawn.y,
+      hp: e.hp,
+      maxHp: e.hp,
+      speed: 120 + Math.random() * 20,
+      cooldown: Math.random() * 0.8
+    };
+  });
 
   game.pickups = map.pickups.map((p, i) => ({
     id: `${index}-p-${i}`,
@@ -202,6 +207,34 @@ function circleRectCollision(cx, cy, radius, rect) {
 
 function blockedAt(x, y, radius) {
   return mapRects().some((r) => circleRectCollision(x, y, radius, r));
+}
+
+function findNearestOpenPoint(x, y, radius) {
+  if (!blockedAt(x, y, radius)) return { x, y };
+
+  const baseX = Math.floor(x / TILE);
+  const baseY = Math.floor(y / TILE);
+  const maxRadius = Math.max(game.activeMap.width, game.activeMap.height);
+
+  for (let ring = 1; ring <= maxRadius; ring += 1) {
+    for (let oy = -ring; oy <= ring; oy += 1) {
+      for (let ox = -ring; ox <= ring; ox += 1) {
+        if (Math.abs(ox) !== ring && Math.abs(oy) !== ring) continue;
+
+        const tx = baseX + ox;
+        const ty = baseY + oy;
+        if (tx <= 0 || ty <= 0 || tx >= game.activeMap.width - 1 || ty >= game.activeMap.height - 1) continue;
+
+        const candidateX = (tx + 0.5) * TILE;
+        const candidateY = (ty + 0.5) * TILE;
+        if (!blockedAt(candidateX, candidateY, radius)) {
+          return { x: candidateX, y: candidateY };
+        }
+      }
+    }
+  }
+
+  return { x, y };
 }
 
 function moveWithCollision(entity, dx, dy, radius) {

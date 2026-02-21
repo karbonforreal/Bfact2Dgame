@@ -24,7 +24,8 @@ const maps = [
     ],
     pickups: [
       { x: 3.5, y: 3.5, type: 'ammo', value: 15 },
-      { x: 20.5, y: 13.5, type: 'med', value: 20 }
+      { x: 20.5, y: 13.5, type: 'health', value: 20 },
+      { x: 11.5, y: 8.5, type: 'armor', value: 20 }
     ],
     spawn: { x: 2.5, y: 2.5 },
     exit: { x: 21.5, y: 13.5 }
@@ -48,11 +49,39 @@ const maps = [
     ],
     pickups: [
       { x: 2.5, y: 15.5, type: 'ammo', value: 20 },
-      { x: 25.5, y: 2.5, type: 'med', value: 25 },
-      { x: 14.5, y: 10.5, type: 'ammo', value: 10 }
+      { x: 25.5, y: 2.5, type: 'health', value: 25 },
+      { x: 14.5, y: 10.5, type: 'ammo', value: 10 },
+      { x: 20.5, y: 15.5, type: 'armor', value: 25 }
     ],
     spawn: { x: 2.5, y: 2.5 },
     exit: { x: 25.5, y: 15.5 }
+  },
+  {
+    name: 'Reactor Vault',
+    width: 30,
+    height: 20,
+    walls: [
+      [0, 0, 30, 1], [0, 19, 30, 1], [0, 0, 1, 20], [29, 0, 1, 20],
+      [3, 4, 10, 1], [3, 4, 1, 10], [7, 8, 1, 10], [11, 2, 1, 8],
+      [15, 6, 1, 12], [19, 3, 1, 10], [23, 8, 1, 10], [26, 3, 1, 13],
+      [4, 14, 16, 1], [10, 17, 12, 1]
+    ],
+    enemies: [
+      { x: 5, y: 16, hp: 85 },
+      { x: 9, y: 6, hp: 90 },
+      { x: 14, y: 11, hp: 95 },
+      { x: 18, y: 5, hp: 90 },
+      { x: 22, y: 14, hp: 100 },
+      { x: 25, y: 10, hp: 105 }
+    ],
+    pickups: [
+      { x: 2.5, y: 17.5, type: 'ammo', value: 20 },
+      { x: 13.5, y: 3.5, type: 'health', value: 25 },
+      { x: 21.5, y: 16.5, type: 'armor', value: 35 },
+      { x: 27.5, y: 2.5, type: 'ammo', value: 15 }
+    ],
+    spawn: { x: 2.5, y: 2.5 },
+    exit: { x: 27.5, y: 17.5 }
   }
 ];
 
@@ -69,6 +98,8 @@ const game = {
     y: 0,
     hp: 100,
     maxHp: 100,
+    armor: 40,
+    maxArmor: 100,
     speed: 280,
     fireCooldown: 0,
     angle: 0,
@@ -95,6 +126,7 @@ function startMap(index, keepPlayerState = true) {
 
   const prev = game.player;
   const hp = keepPlayerState ? Math.max(prev.hp, 30) : prev.maxHp;
+  const armor = keepPlayerState ? prev.armor : 40;
   const reserve = keepPlayerState ? prev.reserveAmmo : 60;
 
   game.player = {
@@ -102,6 +134,7 @@ function startMap(index, keepPlayerState = true) {
     x: map.spawn.x * TILE,
     y: map.spawn.y * TILE,
     hp,
+    armor,
     reserveAmmo: reserve,
     ammoInMag: Math.min(prev.ammoInMag, prev.magazineSize),
     fireCooldown: 0,
@@ -137,9 +170,17 @@ function resetRun(lostRound = false) {
   if (lostRound) game.losses += 1;
   game.killCount = 0;
   game.player.hp = game.player.maxHp;
+  game.player.armor = 40;
   game.player.reserveAmmo = 60;
   game.player.ammoInMag = game.player.magazineSize;
   startMap(0, false);
+}
+
+function applyDamage(amount) {
+  const p = game.player;
+  const armorAbsorb = Math.min(p.armor, amount * 0.7);
+  p.armor -= armorAbsorb;
+  p.hp -= amount - armorAbsorb;
 }
 
 function mapRects() {
@@ -301,7 +342,7 @@ function update(dt) {
     }
 
     if (distance < PLAYER_RADIUS + 16 && p.invulnerable <= 0) {
-      p.hp -= 12;
+      applyDamage(12);
       p.invulnerable = 0.55;
       game.message = 'Close contact!';
     }
@@ -319,7 +360,7 @@ function update(dt) {
 
     const hitPlayer = Math.hypot(p.x - bullet.x, p.y - bullet.y) < PLAYER_RADIUS;
     if (hitPlayer && p.invulnerable <= 0) {
-      p.hp -= bullet.damage;
+      applyDamage(bullet.damage);
       p.invulnerable = 0.4;
       bullet.life = 0;
       game.message = 'You were hit.';
@@ -333,9 +374,12 @@ function update(dt) {
       if (pickup.type === 'ammo') {
         p.reserveAmmo += pickup.value;
         game.message = `Picked up ammo +${pickup.value}`;
-      } else {
+      } else if (pickup.type === 'health') {
         p.hp = Math.min(p.maxHp, p.hp + pickup.value);
-        game.message = `Patched armor +${pickup.value}`;
+        game.message = `Picked up health +${pickup.value}`;
+      } else {
+        p.armor = Math.min(p.maxArmor, p.armor + pickup.value);
+        game.message = `Picked up armor +${pickup.value}`;
       }
     }
   }
@@ -353,7 +397,7 @@ function update(dt) {
   const exitWorld = { x: game.activeMap.exit.x * TILE, y: game.activeMap.exit.y * TILE };
   const atExit = Math.hypot(p.x - exitWorld.x, p.y - exitWorld.y) < 42;
 
-  if (living === 0 && atExit) {
+  if (atExit) {
     if (game.mapIndex === maps.length - 1) {
       game.wins += 1;
       game.message = 'Mission complete. New run started.';
@@ -416,11 +460,23 @@ function draw() {
   ctx.strokeStyle = '#99ffb5';
   ctx.stroke();
 
+  ctx.fillStyle = '#b4ffd7';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('EXIT', exitPoint.x, exitPoint.y + 5);
+
   for (const pickup of game.pickups) {
     if (!pickup.alive) continue;
     const s = worldToScreen(pickup.x, pickup.y, camera);
-    ctx.fillStyle = pickup.type === 'ammo' ? '#ffd062' : '#7bf9ff';
+    if (pickup.type === 'ammo') ctx.fillStyle = '#ffd062';
+    if (pickup.type === 'health') ctx.fillStyle = '#7bff9f';
+    if (pickup.type === 'armor') ctx.fillStyle = '#7bf9ff';
     ctx.fillRect(s.x - 10, s.y - 10, 20, 20);
+    ctx.fillStyle = '#1d2b38';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    const marker = pickup.type === 'ammo' ? 'A' : pickup.type === 'health' ? '+' : '🛡';
+    ctx.fillText(marker, s.x, s.y + 4);
   }
 
   for (const enemy of game.enemies) {
@@ -465,6 +521,17 @@ function draw() {
   ctx.fillStyle = '#1e2937';
   ctx.fillRect(-4, -4, 26, 8);
   ctx.restore();
+
+  ctx.fillStyle = 'rgba(15, 23, 35, 0.7)';
+  ctx.fillRect(16, 16, 250, 52);
+  ctx.strokeStyle = '#60d7ff';
+  ctx.strokeRect(16, 16, 250, 52);
+  ctx.fillStyle = '#c7f5ff';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
+  ctx.font = '13px sans-serif';
+  ctx.fillText('Reach EXIT to advance', 26, 58);
 }
 
 function updatePanel(livingEnemies) {
@@ -472,9 +539,12 @@ function updatePanel(livingEnemies) {
 
   statusEl.innerHTML = `
     <p><strong>Map:</strong> <span class="value-accent">${game.activeMap.name}</span></p>
+    <p><strong>Level:</strong> <span class="value-accent">${game.mapIndex + 1}/${maps.length}</span></p>
     <p><strong>HP:</strong> <span class="${p.hp < 35 ? 'value-danger' : 'value-good'}">${Math.max(0, Math.round(p.hp))}/${p.maxHp}</span></p>
+    <p><strong>Armor:</strong> <span class="${p.armor < 25 ? 'value-danger' : 'value-accent'}">${Math.max(0, Math.round(p.armor))}/${p.maxArmor}</span></p>
     <p><strong>Ammo:</strong> <span class="value-accent">${p.ammoInMag}</span> / ${p.reserveAmmo} reserve</p>
     <p><strong>Hostiles:</strong> ${livingEnemies}</p>
+    <p><strong>Pickups:</strong> A=Ammo, +=Health, 🛡=Armor</p>
   `;
 
   scoreboardEl.innerHTML = `
@@ -500,10 +570,6 @@ window.addEventListener('keydown', (e) => {
   game.keys.add(key);
 
   if (key === 'r') reloadWeapon();
-  if (key === 'm') {
-    const next = (game.mapIndex + 1) % maps.length;
-    startMap(next, true);
-  }
 });
 
 window.addEventListener('keyup', (e) => {

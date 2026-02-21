@@ -1,3 +1,23 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyberdog: Browser Beta 1</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="game-shell">
+    <header class="hud-bar">
+      <h1>Cyberdog Beta 1</h1>
+      <p class="hint">WASD move · Mouse aim · Left click shoot · R reload · M swap map</p>
+    </header>
+    <canvas id="gameCanvas" width="1280" height="720" aria-label="Cyberdog game canvas"></canvas>
+    <section class="panel" id="uiPanel">
+      <div id="status"></div>
+      <div id="scoreboard"></div>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
 </html>

@@ -108,7 +108,9 @@ const game = {
     reserveAmmo: 60,
     reloadTime: 1.2,
     reloading: 0,
-    invulnerable: 0
+    invulnerable: 0,
+    walkCycle: 0,
+    moving: false
   },
   bullets: [],
   enemyBullets: [],
@@ -141,7 +143,9 @@ function startMap(index, keepPlayerState = true) {
     ammoInMag: Math.min(prev.ammoInMag, prev.magazineSize),
     fireCooldown: 0,
     reloading: 0,
-    invulnerable: 0.4
+    invulnerable: 0.4,
+    walkCycle: prev.walkCycle || 0,
+    moving: false
   };
 
   game.enemies = map.enemies.map((e, i) => {
@@ -326,6 +330,10 @@ function update(dt) {
   if (mx !== 0 || my !== 0) {
     const n = normalize(mx, my);
     moveWithCollision(p, n.x * p.speed * dt, n.y * p.speed * dt, PLAYER_RADIUS);
+    p.moving = true;
+    p.walkCycle += dt * 10;
+  } else {
+    p.moving = false;
   }
 
   p.angle = Math.atan2(game.mouse.y - canvas.height / 2, game.mouse.x - canvas.width / 2);
@@ -544,16 +552,7 @@ function draw() {
     ctx.fill();
   }
 
-  ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(p.angle);
-  ctx.fillStyle = p.invulnerable > 0 ? '#ffe28a' : '#50f0ff';
-  ctx.beginPath();
-  ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#1e2937';
-  ctx.fillRect(-4, -4, 26, 8);
-  ctx.restore();
+  drawPlayer(p);
 
   ctx.fillStyle = 'rgba(15, 23, 35, 0.7)';
   ctx.fillRect(16, 16, 250, 52);
@@ -565,6 +564,59 @@ function draw() {
   ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
   ctx.font = '13px sans-serif';
   ctx.fillText('Reach EXIT to advance', 26, 58);
+}
+
+function drawPlayer(player) {
+  const x = canvas.width / 2;
+  const y = canvas.height / 2;
+  const bob = player.moving ? Math.sin(player.walkCycle * 2) * 1.5 : 0;
+  const step = player.moving ? Math.sin(player.walkCycle) * 5 : 0;
+  const facing = Math.cos(player.angle) >= 0 ? 1 : -1;
+  const shirtColor = player.invulnerable > 0 ? '#f9d97a' : '#6ec2ff';
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  // Legs (alternating to fake a walk cycle)
+  ctx.fillStyle = '#2f4f7d';
+  ctx.fillRect(-8, 9 + step, 6, 14);
+  ctx.fillRect(2, 9 - step, 6, 14);
+
+  // Shoes
+  ctx.fillStyle = '#1f2430';
+  ctx.fillRect(-9, 22 + step, 8, 3);
+  ctx.fillRect(1, 22 - step, 8, 3);
+
+  // Torso
+  ctx.fillStyle = shirtColor;
+  ctx.fillRect(-10, -3, 20, 14);
+
+  // Arms
+  ctx.fillStyle = '#d99c72';
+  ctx.fillRect(-13, 0, 3, 10);
+  ctx.fillRect(10, 0, 3, 10);
+
+  // Head + hair
+  ctx.fillStyle = '#f0bf96';
+  ctx.fillRect(-7, -15, 14, 12);
+  ctx.fillStyle = '#6b4428';
+  ctx.fillRect(-7, -15, 14, 4);
+
+  // Eyes (single-pixel retro look)
+  ctx.fillStyle = '#1d2730';
+  ctx.fillRect(-4, -10, 2, 2);
+  ctx.fillRect(2, -10, 2, 2);
+
+  // Blaster + facing direction
+  ctx.save();
+  ctx.scale(facing, 1);
+  ctx.fillStyle = '#23384d';
+  ctx.fillRect(8, 2, 12, 4);
+  ctx.fillStyle = '#7ce6ff';
+  ctx.fillRect(18, 3, 4, 2);
+  ctx.restore();
+
+  ctx.restore();
 }
 
 function updatePanel(livingEnemies) {

@@ -1011,19 +1011,25 @@ function drawGrid(camera) {
       const sx = tileWorldX - camera.x + canvas.width / 2;
       const sy = tileWorldY - camera.y + canvas.height / 2;
 
-      const baseTint = (gx + gy + game.mapIndex) % 2 === 0 ? '#152230' : '#17293b';
-      ctx.fillStyle = baseTint;
+      const baseShade = (gx + gy + game.mapIndex) % 2 === 0 ? '#152739' : '#132234';
+      ctx.fillStyle = baseShade;
       ctx.fillRect(sx, sy, TILE, TILE);
 
-      ctx.fillStyle = 'rgba(77, 119, 156, 0.22)';
-      ctx.fillRect(sx + 4, sy + 4, TILE - 8, 3);
-      ctx.fillRect(sx + 4, sy + TILE - 7, TILE - 8, 2);
+      const floorGrad = ctx.createLinearGradient(sx, sy, sx + TILE, sy + TILE);
+      floorGrad.addColorStop(0, 'rgba(103, 161, 210, 0.17)');
+      floorGrad.addColorStop(0.5, 'rgba(27, 57, 82, 0.14)');
+      floorGrad.addColorStop(1, 'rgba(9, 22, 36, 0.2)');
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(sx, sy, TILE, TILE);
 
-      ctx.fillStyle = 'rgba(118, 239, 255, 0.13)';
-      ctx.fillRect(sx + 6, sy + 6, 2, TILE - 12);
-      ctx.fillRect(sx + TILE - 8, sy + 6, 2, TILE - 12);
+      const pulse = ((gx * 17 + gy * 11 + Math.floor(performance.now() * 0.004)) % 12) / 12;
+      ctx.fillStyle = `rgba(111, 234, 255, ${0.05 + pulse * 0.06})`;
+      ctx.fillRect(sx + 6, sy + 6, TILE - 12, 2);
+      ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.8);
+      ctx.fillRect(sx + 6, sy + 6, 1.8, TILE - 12);
+      ctx.fillRect(sx + TILE - 8, sy + 6, 1.8, TILE - 12);
 
-      ctx.strokeStyle = 'rgba(117, 180, 222, 0.18)';
+      ctx.strokeStyle = 'rgba(127, 196, 238, 0.18)';
       ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
     }
   }
@@ -1031,15 +1037,23 @@ function drawGrid(camera) {
 
 function drawSciWall(x, y, w, h) {
   const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-  gradient.addColorStop(0, '#2d4258');
-  gradient.addColorStop(0.6, '#23374d');
+  gradient.addColorStop(0, '#36526d');
+  gradient.addColorStop(0.5, '#253a4f');
   gradient.addColorStop(1, '#1a2a3a');
   ctx.fillStyle = gradient;
   ctx.fillRect(x, y, w, h);
 
-  ctx.fillStyle = 'rgba(112, 175, 224, 0.18)';
+  const gloss = ctx.createLinearGradient(x, y, x, y + h);
+  gloss.addColorStop(0, 'rgba(154, 225, 255, 0.16)');
+  gloss.addColorStop(0.35, 'rgba(98, 162, 214, 0.06)');
+  gloss.addColorStop(1, 'rgba(6, 14, 24, 0.22)');
+  ctx.fillStyle = gloss;
+  ctx.fillRect(x, y, w, h);
+
+  ctx.fillStyle = 'rgba(112, 175, 224, 0.22)';
   for (let px = x + 6; px < x + w - 6; px += 18) {
     ctx.fillRect(px, y + 5, 10, 2);
+    ctx.fillRect(px, y + h - 7, 10, 1.6);
   }
 
   ctx.fillStyle = 'rgba(112, 245, 255, 0.12)';
@@ -1048,7 +1062,7 @@ function drawSciWall(x, y, w, h) {
     ctx.fillRect(x + w - 7, py, 2, 10);
   }
 
-  ctx.strokeStyle = '#5f8db0';
+  ctx.strokeStyle = '#7eb4dd';
   ctx.lineWidth = 1.5;
   ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
 }
@@ -1296,150 +1310,169 @@ function draw() {
 function drawPlayer(player) {
   const x = canvas.width / 2;
   const y = canvas.height / 2;
-  const bob = player.moving ? Math.sin(player.walkCycle * 2) * 1.5 : 0;
-  const step = player.moving ? Math.sin(player.walkCycle) * 5 : 0;
-  const shirtColor = player.invulnerable > 0 ? '#f9d97a' : '#6ec2ff';
+  const stride = player.moving ? Math.sin(player.walkCycle) : 0;
+  const bob = player.moving ? Math.sin(player.walkCycle * 2) * 2.2 : 0;
+  const armSwing = player.moving ? Math.sin(player.walkCycle + Math.PI / 2) * 0.4 : 0;
+  const shirtColor = player.invulnerable > 0 ? '#ffd66e' : '#73ccff';
   const knifeProgress = player.knifeAnim > 0 ? 1 - player.knifeAnim / 0.16 : 0;
   const knifeStabOffset = player.activeWeapon === 'knife' ? Math.sin(knifeProgress * Math.PI) * 14 : 0;
-  const torsoTurn = player.angle * 0.32;
 
   ctx.save();
   ctx.translate(x, y + bob);
 
-  // Legs (alternating to fake a walk cycle)
-  ctx.fillStyle = '#2f4f7d';
-  ctx.fillRect(-8, 9 + step, 6, 14);
-  ctx.fillRect(2, 9 - step, 6, 14);
+  const legLiftA = stride * 5.8;
+  const legLiftB = -stride * 5.8;
+  ctx.fillStyle = '#365786';
+  ctx.fillRect(-9, 7 + legLiftA, 7, 15);
+  ctx.fillRect(2, 7 + legLiftB, 7, 15);
 
-  // Shoes
-  ctx.fillStyle = '#1f2430';
-  ctx.fillRect(-9, 22 + step, 8, 3);
-  ctx.fillRect(1, 22 - step, 8, 3);
+  ctx.fillStyle = '#1b2532';
+  ctx.fillRect(-10, 22 + legLiftA, 9, 3);
+  ctx.fillRect(1, 22 + legLiftB, 9, 3);
 
-  // Torso
-  ctx.fillStyle = shirtColor;
-  ctx.fillRect(-10, -3, 20, 14);
+  const torsoGrad = ctx.createLinearGradient(-10, -6, 10, 12);
+  torsoGrad.addColorStop(0, shirtColor);
+  torsoGrad.addColorStop(1, '#3c9dd0');
+  ctx.fillStyle = torsoGrad;
+  ctx.fillRect(-11, -4, 22, 15);
 
   ctx.save();
-  ctx.rotate(torsoTurn);
+  ctx.rotate(player.angle * 0.32);
 
-  // Arms
-  ctx.fillStyle = '#d99c72';
-  ctx.fillRect(-13, 0, 3, 10);
-  ctx.fillRect(10, 0, 3, 10);
+  ctx.fillStyle = '#cf8f69';
+  ctx.save();
+  ctx.translate(-11, 2);
+  ctx.rotate(-0.5 + armSwing);
+  ctx.fillRect(-2, -2, 4, 11);
+  ctx.restore();
 
-  // Head + hair
-  ctx.fillStyle = '#f0bf96';
-  ctx.fillRect(-7, -15, 14, 12);
-  ctx.fillStyle = '#6b4428';
-  ctx.fillRect(-7, -15, 14, 4);
+  ctx.save();
+  ctx.translate(11, 2);
+  ctx.rotate(0.45 - armSwing * 0.6);
+  ctx.fillRect(-2, -2, 4, 11);
+  ctx.restore();
 
-  // Eyes (single-pixel retro look)
-  const eyeOffsetX = Math.cos(player.angle) * 1.5;
-  const eyeOffsetY = Math.sin(player.angle) * 1.5;
-  ctx.fillStyle = '#1d2730';
-  ctx.fillRect(-4 + eyeOffsetX, -10 + eyeOffsetY, 2, 2);
-  ctx.fillRect(2 + eyeOffsetX, -10 + eyeOffsetY, 2, 2);
+  const headGrad = ctx.createLinearGradient(-8, -16, 8, -4);
+  headGrad.addColorStop(0, '#ffd0aa');
+  headGrad.addColorStop(1, '#d49f77');
+  ctx.fillStyle = headGrad;
+  ctx.fillRect(-8, -16, 16, 13);
 
-  // Weapon aiming direction (full 360)
+  ctx.fillStyle = '#5f3f2a';
+  ctx.fillRect(-8, -16, 16, 4);
+
+  const eyeOffsetX = Math.cos(player.angle) * 1.7;
+  const eyeOffsetY = Math.sin(player.angle) * 1.4;
+  ctx.fillStyle = '#15202a';
+  ctx.fillRect(-5 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
+  ctx.fillRect(2 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
+
   ctx.save();
   ctx.rotate(player.angle);
   if (player.activeWeapon === 'knife') {
-    ctx.fillStyle = '#303b45';
-    ctx.fillRect(8 + knifeStabOffset * 0.35, -2, 4, 4);
-    ctx.fillStyle = '#d9e7f2';
+    ctx.fillStyle = '#2a3440';
+    ctx.fillRect(8 + knifeStabOffset * 0.25, -2, 5, 4);
+    ctx.fillStyle = '#dce9f2';
     ctx.fillRect(12 + knifeStabOffset, -2, 12, 2);
     ctx.fillRect(12 + knifeStabOffset, 0, 12, 1);
   } else if (player.activeWeapon === 'shotgun') {
-    ctx.fillStyle = '#2a3540';
-    ctx.fillRect(7, -3, 15, 6);
-    ctx.fillStyle = '#7a4f2c';
-    ctx.fillRect(6, -2, 7, 4);
-    ctx.fillStyle = '#b7c9d6';
-    ctx.fillRect(21, -2, 4, 4);
+    ctx.fillStyle = '#1f2e38';
+    ctx.fillRect(6, -3.2, 18, 6.4);
+    ctx.fillStyle = '#7e522f';
+    ctx.fillRect(6, -2.2, 9, 4.6);
+    ctx.fillStyle = '#ccd5de';
+    ctx.fillRect(22, -1.8, 5, 3.6);
   } else if (player.activeWeapon === 'sniper') {
-    ctx.fillStyle = '#263445';
-    ctx.fillRect(6, -2, 24, 4);
-    ctx.fillStyle = '#3f556c';
-    ctx.fillRect(12, -5, 9, 3);
-    ctx.fillStyle = '#0f1620';
-    ctx.fillRect(14, -7, 6, 2);
+    ctx.fillStyle = '#243648';
+    ctx.fillRect(6, -2.4, 25, 4.8);
+    ctx.fillStyle = '#425a73';
+    ctx.fillRect(13, -6, 10, 3.4);
+    ctx.fillStyle = '#121921';
+    ctx.fillRect(16, -8, 6, 2);
     ctx.fillStyle = '#ff6565';
-    ctx.fillRect(28, -1, 3, 2);
+    ctx.fillRect(29, -1.2, 3, 2.4);
   } else {
-    ctx.fillStyle = '#23384d';
-    ctx.fillRect(8, -2, 12, 4);
+    ctx.fillStyle = '#1f344a';
+    ctx.fillRect(8, -2.2, 13, 4.4);
     ctx.fillStyle = '#7ce6ff';
-    ctx.fillRect(18, -1, 4, 2);
+    ctx.fillRect(19, -1.3, 4, 2.6);
   }
   ctx.restore();
   ctx.restore();
-
   ctx.restore();
 }
 
 function drawHumanoidEnemy(enemy, x, y) {
   const palette = enemy.variant || HUMANOID_VARIANTS[0];
-  const bob = enemy.moving ? Math.sin(enemy.walkCycle * 2) * 1.5 : 0;
-  const step = enemy.moving ? Math.sin(enemy.walkCycle) * 4.5 : 0;
+  const stride = enemy.moving ? Math.sin(enemy.walkCycle) : 0;
+  const bob = enemy.moving ? Math.sin(enemy.walkCycle * 2) * 1.9 : 0;
 
   ctx.save();
   ctx.translate(x, y + bob);
 
   ctx.fillStyle = palette.pants;
-  ctx.fillRect(-8, 9 + step, 6, 14);
-  ctx.fillRect(2, 9 - step, 6, 14);
+  ctx.fillRect(-9, 7 + stride * 5, 7, 15);
+  ctx.fillRect(2, 7 - stride * 5, 7, 15);
 
   ctx.fillStyle = '#201d1d';
-  ctx.fillRect(-9, 22 + step, 8, 3);
-  ctx.fillRect(1, 22 - step, 8, 3);
+  ctx.fillRect(-10, 22 + stride * 5, 9, 3);
+  ctx.fillRect(1, 22 - stride * 5, 9, 3);
 
-  ctx.fillStyle = palette.shirt;
-  ctx.fillRect(-10, -3, 20, 14);
+  const shirtGrad = ctx.createLinearGradient(-10, -4, 10, 12);
+  shirtGrad.addColorStop(0, palette.shirt);
+  shirtGrad.addColorStop(1, 'rgba(28, 34, 51, 0.9)');
+  ctx.fillStyle = shirtGrad;
+  ctx.fillRect(-11, -4, 22, 15);
 
   ctx.fillStyle = palette.skin;
-  ctx.fillRect(-13, 0, 3, 10);
-  ctx.fillRect(10, 0, 3, 10);
-  ctx.fillRect(-7, -15, 14, 12);
+  ctx.fillRect(-13, 0, 3.5, 10);
+  ctx.fillRect(9.5, 0, 3.5, 10);
+  ctx.fillRect(-8, -16, 16, 13);
 
   ctx.fillStyle = palette.hair;
-  ctx.fillRect(-7, -15, 14, 4);
+  ctx.fillRect(-8, -16, 16, 4);
 
-  ctx.fillStyle = '#1d2730';
-  ctx.fillRect(-4, -10, 2, 2);
-  ctx.fillRect(2, -10, 2, 2);
+  ctx.fillStyle = '#16212b';
+  ctx.fillRect(-5, -10, 2.2, 2.2);
+  ctx.fillRect(2.5, -10, 2.2, 2.2);
 
-  ctx.fillStyle = '#a83f45';
-  ctx.fillRect(8, 2, 9, 4);
+  ctx.fillStyle = '#ba5058';
+  ctx.fillRect(8, 1.2, 10, 4.2);
 
   ctx.restore();
 }
 
 function drawDogEnemy(enemy, x, y) {
-  const runOffset = enemy.moving ? Math.sin(enemy.walkCycle) * 3 : 0;
-  const bob = enemy.moving ? Math.cos(enemy.walkCycle * 2) * 1.2 : 0;
+  const runOffset = enemy.moving ? Math.sin(enemy.walkCycle) : 0;
+  const bob = enemy.moving ? Math.cos(enemy.walkCycle * 2) * 1.6 : 0;
 
   ctx.save();
   ctx.translate(x, y + bob);
 
-  ctx.fillStyle = '#6f5849';
-  ctx.fillRect(-14, -5, 24, 12);
+  const bodyGrad = ctx.createLinearGradient(-14, -7, 10, 8);
+  bodyGrad.addColorStop(0, '#7a6353');
+  bodyGrad.addColorStop(1, '#5f4a3f');
+  ctx.fillStyle = bodyGrad;
+  ctx.fillRect(-14, -6, 24, 13);
 
-  ctx.fillStyle = '#5a463b';
-  ctx.fillRect(8, -8, 10, 10);
+  ctx.fillStyle = '#6a5448';
+  ctx.fillRect(8, -9, 11, 11);
 
-  ctx.fillStyle = '#2b211d';
-  ctx.fillRect(14, -10, 3, 4);
-  ctx.fillRect(10, -10, 3, 4);
+  ctx.fillStyle = '#201815';
+  ctx.fillRect(14, -11, 3, 4);
+  ctx.fillRect(10, -11, 3, 4);
 
-  ctx.fillStyle = '#332923';
-  ctx.fillRect(-10, 6 + runOffset, 4, 10);
-  ctx.fillRect(-2, 6 - runOffset, 4, 10);
-  ctx.fillRect(4, 6 + runOffset, 4, 10);
-  ctx.fillRect(12, 6 - runOffset, 4, 10);
+  ctx.fillStyle = '#342822';
+  ctx.fillRect(-10, 6 + runOffset * 3, 4, 10);
+  ctx.fillRect(-2, 6 - runOffset * 3, 4, 10);
+  ctx.fillRect(4, 6 + runOffset * 3, 4, 10);
+  ctx.fillRect(12, 6 - runOffset * 3, 4, 10);
 
-  ctx.fillStyle = '#6f5849';
+  ctx.fillStyle = '#70594c';
   ctx.fillRect(-18, -6, 7, 3);
+
+  ctx.fillStyle = '#e9d8a7';
+  ctx.fillRect(17, -3, 2, 2);
 
   ctx.restore();
 }

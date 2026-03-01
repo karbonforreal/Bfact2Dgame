@@ -218,6 +218,7 @@ function startMap(index, keepPlayerState = true) {
       moving: false,
       variant,
       alerted: type === 'dog',
+      seesPlayer: false,
       guardOrigin: { x: safeSpawn.x, y: safeSpawn.y },
       guardTarget: { x: safeSpawn.x, y: safeSpawn.y },
       path: [],
@@ -432,7 +433,7 @@ function updateEnemyAwareness(enemy, player) {
     return;
   }
 
-  if (!enemy.alerted && enemyCanSeePlayer(enemy, player)) {
+  if (!enemy.alerted && enemy.seesPlayer) {
     enemy.alerted = true;
     game.message = 'Enemies spotted you!';
   }
@@ -730,6 +731,7 @@ function update(dt) {
 
   for (const enemy of game.enemies) {
     if (enemy.hp <= 0) continue;
+    enemy.seesPlayer = enemyCanSeePlayer(enemy, p);
     updateEnemyAwareness(enemy, p);
 
     const toPlayer = normalize(p.x - enemy.x, p.y - enemy.y);
@@ -763,7 +765,7 @@ function update(dt) {
       continue;
     }
 
-    if (enemy.alerted && distance < 620 && enemy.cooldown <= 0 && enemyCanSeePlayer(enemy, p)) {
+    if (enemy.alerted && distance < 620 && enemy.cooldown <= 0 && enemy.seesPlayer) {
       shootEnemyBullet(enemy, toPlayer);
       enemy.cooldown = 1.2 + Math.random() * 0.8;
     }
@@ -847,24 +849,84 @@ function drawGrid(camera) {
   const startY = Math.floor((camera.y - canvas.height / 2) / TILE) - 1;
   const endY = Math.ceil((camera.y + canvas.height / 2) / TILE) + 1;
 
-  ctx.strokeStyle = 'rgba(87, 129, 166, 0.2)';
-  ctx.lineWidth = 1;
-
-  for (let gx = startX; gx <= endX; gx += 1) {
-    const screenX = gx * TILE - camera.x + canvas.width / 2;
-    ctx.beginPath();
-    ctx.moveTo(screenX, 0);
-    ctx.lineTo(screenX, canvas.height);
-    ctx.stroke();
-  }
-
   for (let gy = startY; gy <= endY; gy += 1) {
-    const screenY = gy * TILE - camera.y + canvas.height / 2;
-    ctx.beginPath();
-    ctx.moveTo(0, screenY);
-    ctx.lineTo(canvas.width, screenY);
-    ctx.stroke();
+    for (let gx = startX; gx <= endX; gx += 1) {
+      const tileWorldX = gx * TILE;
+      const tileWorldY = gy * TILE;
+      const sx = tileWorldX - camera.x + canvas.width / 2;
+      const sy = tileWorldY - camera.y + canvas.height / 2;
+
+      const baseTint = (gx + gy + game.mapIndex) % 2 === 0 ? '#152230' : '#17293b';
+      ctx.fillStyle = baseTint;
+      ctx.fillRect(sx, sy, TILE, TILE);
+
+      ctx.fillStyle = 'rgba(77, 119, 156, 0.22)';
+      ctx.fillRect(sx + 4, sy + 4, TILE - 8, 3);
+      ctx.fillRect(sx + 4, sy + TILE - 7, TILE - 8, 2);
+
+      ctx.fillStyle = 'rgba(118, 239, 255, 0.13)';
+      ctx.fillRect(sx + 6, sy + 6, 2, TILE - 12);
+      ctx.fillRect(sx + TILE - 8, sy + 6, 2, TILE - 12);
+
+      ctx.strokeStyle = 'rgba(117, 180, 222, 0.18)';
+      ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
+    }
   }
+}
+
+function drawSciWall(x, y, w, h) {
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  gradient.addColorStop(0, '#2d4258');
+  gradient.addColorStop(0.6, '#23374d');
+  gradient.addColorStop(1, '#1a2a3a');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y, w, h);
+
+  ctx.fillStyle = 'rgba(112, 175, 224, 0.18)';
+  for (let px = x + 6; px < x + w - 6; px += 18) {
+    ctx.fillRect(px, y + 5, 10, 2);
+  }
+
+  ctx.fillStyle = 'rgba(112, 245, 255, 0.12)';
+  for (let py = y + 8; py < y + h - 8; py += 20) {
+    ctx.fillRect(x + 5, py, 2, 10);
+    ctx.fillRect(x + w - 7, py, 2, 10);
+  }
+
+  ctx.strokeStyle = '#5f8db0';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+}
+
+function drawExitStairs(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  const aura = ctx.createRadialGradient(0, 0, 6, 0, 0, 36);
+  aura.addColorStop(0, 'rgba(168, 255, 219, 0.5)');
+  aura.addColorStop(1, 'rgba(84, 212, 182, 0.05)');
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, 36, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(145, 255, 220, 0.38)';
+  ctx.fillRect(-24, 16, 48, 6);
+  ctx.fillStyle = 'rgba(171, 255, 233, 0.5)';
+  ctx.fillRect(-18, 9, 36, 5);
+  ctx.fillStyle = 'rgba(195, 255, 241, 0.62)';
+  ctx.fillRect(-12, 2, 24, 5);
+  ctx.fillStyle = 'rgba(220, 255, 247, 0.75)';
+  ctx.fillRect(-6, -5, 12, 5);
+
+  ctx.strokeStyle = '#8dffd0';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-24, 16, 48, 6);
+  ctx.strokeRect(-18, 9, 36, 5);
+  ctx.strokeRect(-12, 2, 24, 5);
+  ctx.strokeRect(-6, -5, 12, 5);
+
+  ctx.restore();
 }
 
 function draw() {
@@ -877,24 +939,11 @@ function draw() {
 
   for (const wall of mapRects()) {
     const s = worldToScreen(wall.x, wall.y, camera);
-    ctx.fillStyle = '#1f3446';
-    ctx.fillRect(s.x, s.y, wall.w, wall.h);
-    ctx.strokeStyle = '#3f6b8f';
-    ctx.strokeRect(s.x, s.y, wall.w, wall.h);
+    drawSciWall(s.x, s.y, wall.w, wall.h);
   }
 
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);
-  ctx.fillStyle = 'rgba(117, 255, 157, 0.25)';
-  ctx.beginPath();
-  ctx.arc(exitPoint.x, exitPoint.y, 28, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#99ffb5';
-  ctx.stroke();
-
-  ctx.fillStyle = '#b4ffd7';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('EXIT', exitPoint.x, exitPoint.y + 5);
+  drawExitStairs(exitPoint.x, exitPoint.y);
 
   for (const pickup of game.pickups) {
     if (!pickup.alive) continue;
@@ -913,6 +962,21 @@ function draw() {
   for (const enemy of game.enemies) {
     if (enemy.hp <= 0) continue;
     const s = worldToScreen(enemy.x, enemy.y, camera);
+
+    if (enemy.seesPlayer) {
+      ctx.strokeStyle = 'rgba(255, 82, 82, 0.95)';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(255, 60, 60, 0.95)';
+      ctx.shadowBlur = 13;
+      if (enemy.type === 'dog') {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, enemy.radius + 6, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.strokeRect(s.x - 14, s.y - 20, 28, 42);
+      }
+      ctx.shadowBlur = 0;
+    }
 
     if (enemy.type === 'dog') {
       drawDogEnemy(enemy, s.x, s.y);
@@ -977,7 +1041,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
   ctx.font = '13px sans-serif';
-  ctx.fillText('Reach EXIT to advance', 26, 58);
+  ctx.fillText('Reach STAIRS to ascend', 26, 58);
 }
 
 function drawPlayer(player) {

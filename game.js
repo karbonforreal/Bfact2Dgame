@@ -131,13 +131,22 @@ const game = {
   pickups: [],
   keys: new Set(),
   mouse: { x: canvas.width / 2, y: canvas.height / 2, down: false },
-  activeMap: null
+  activeMap: null,
+  navGridCache: new Map()
 };
+
+function mapBoundsPx() {
+  return {
+    width: game.activeMap.width * TILE,
+    height: game.activeMap.height * TILE
+  };
+}
 
 function startMap(index, keepPlayerState = true) {
   const map = maps[index];
   game.activeMap = map;
   game.mapIndex = index;
+  game.navGridCache.clear();
 
   const prev = game.player;
   const hp = keepPlayerState ? Math.max(prev.hp, 30) : prev.maxHp;
@@ -178,7 +187,13 @@ function startMap(index, keepPlayerState = true) {
       radius,
       walkCycle: Math.random() * Math.PI * 2,
       moving: false,
-      variant
+      variant,
+      alerted: type === 'dog',
+      guardOrigin: { x: safeSpawn.x, y: safeSpawn.y },
+      guardTarget: { x: safeSpawn.x, y: safeSpawn.y },
+      path: [],
+      pathTarget: { tx: Math.floor(safeSpawn.x / TILE), ty: Math.floor(safeSpawn.y / TILE) },
+      pathRecalc: 0
     };
   });
 
@@ -231,7 +246,170 @@ function circleRectCollision(cx, cy, radius, rect) {
 }
 
 function blockedAt(x, y, radius) {
+  const bounds = mapBoundsPx();
+  if (x - radius < 0 || y - radius < 0 || x + radius > bounds.width || y + radius > bounds.height) return true;
   return mapRects().some((r) => circleRectCollision(x, y, radius, r));
+}
+
+function hasLineOfSight(x0, y0, x1, y1, step = 16) {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const distance = Math.hypot(dx, dy);
+  const samples = Math.max(1, Math.ceil(distance / step));
+
+  for (let i = 1; i < samples; i += 1) {
+    const t = i / samples;
+    const x = x0 + dx * t;
+    const y = y0 + dy * t;
+    if (blockedAt(x, y, 4)) return false;
+  }
+
+  return true;
+}
+
+function worldToTile(x, y) {
+  return {
+    tx: Math.max(0, Math.min(game.activeMap.width - 1, Math.floor(x / TILE))),
+    ty: Math.max(0, Math.min(game.activeMap.height - 1, Math.floor(y / TILE)))
+  };
+}
+
+function tileCenter(tx, ty) {
+  return {
+    x: (tx + 0.5) * TILE,
+    y: (ty + 0.5) * TILE
+  };
+}
+
+function getWalkGrid(radius) {
+  const key = Math.round(radius);
+  if (game.navGridCache.has(key)) return game.navGridCache.get(key);
+
+  const grid = [];
+  for (let y = 0; y < game.activeMap.height; y += 1) {
+    const row = [];
+    for (let x = 0; x < game.activeMap.width; x += 1) {
+      const center = tileCenter(x, y);
+      row.push(!blockedAt(center.x, center.y, radius));
+    }
+    grid.push(row);
+  }
+
+  game.navGridCache.set(key, grid);
+  return grid;
+}
+
+function buildPath(start, goal, radius) {
+  const grid = getWalkGrid(radius);
+  const width = game.activeMap.width;
+  const height = game.activeMap.height;
+
+  if (!grid[start.ty]?.[start.tx] || !grid[goal.ty]?.[goal.tx]) return [];
+
+  const queue = [start];
+  let head = 0;
+  const visited = new Set([`${start.tx},${start.ty}`]);
+  const parent = new Map();
+  const neighbors = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 }
+  ];
+
+  while (head < queue.length) {
+    const node = queue[head++];
+    if (node.tx === goal.tx && node.ty === goal.ty) break;
+
+    for (const offset of neighbors) {
+      const nx = node.tx + offset.x;
+      const ny = node.ty + offset.y;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+      if (!grid[ny][nx]) continue;
+      const key = `${nx},${ny}`;
+      if (visited.has(key)) continue;
+
+      visited.add(key);
+      parent.set(key, `${node.tx},${node.ty}`);
+      queue.push({ tx: nx, ty: ny });
+    }
+  }
+
+  const goalKey = `${goal.tx},${goal.ty}`;
+  if (!visited.has(goalKey)) return [];
+
+  const path = [];
+  let currentKey = goalKey;
+  while (currentKey) {
+    const [tx, ty] = currentKey.split(',').map(Number);
+    path.push(tileCenter(tx, ty));
+    currentKey = parent.get(currentKey);
+  }
+
+  path.reverse();
+  if (path.length > 0) path.shift();
+  return path;
+}
+
+function enemyCanSeePlayer(enemy, player) {
+  const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+  if (distance > 680) return false;
+  return hasLineOfSight(enemy.x, enemy.y, player.x, player.y);
+}
+
+function updateEnemyAwareness(enemy, player) {
+  if (enemy.type === 'dog') {
+    enemy.alerted = true;
+    return;
+  }
+
+  if (!enemy.alerted && enemyCanSeePlayer(enemy, player)) {
+    enemy.alerted = true;
+    game.message = 'Enemies spotted you!';
+  }
+}
+
+function chooseGuardPoint(enemy) {
+  const radiusTiles = 3;
+  const base = worldToTile(enemy.guardOrigin.x, enemy.guardOrigin.y);
+  const grid = getWalkGrid(enemy.radius);
+  const candidates = [];
+
+  for (let y = base.ty - radiusTiles; y <= base.ty + radiusTiles; y += 1) {
+    for (let x = base.tx - radiusTiles; x <= base.tx + radiusTiles; x += 1) {
+      if (x <= 0 || y <= 0 || x >= game.activeMap.width - 1 || y >= game.activeMap.height - 1) continue;
+      if (!grid[y]?.[x]) continue;
+      candidates.push(tileCenter(x, y));
+    }
+  }
+
+  if (candidates.length === 0) return { ...enemy.guardOrigin };
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function moveEnemyToward(enemy, targetX, targetY, dt) {
+  const start = worldToTile(enemy.x, enemy.y);
+  const goal = worldToTile(targetX, targetY);
+  const targetChanged = enemy.pathTarget.tx !== goal.tx || enemy.pathTarget.ty !== goal.ty;
+  enemy.pathRecalc -= dt;
+
+  if (targetChanged || enemy.pathRecalc <= 0 || enemy.path.length === 0) {
+    enemy.path = buildPath(start, goal, enemy.radius);
+    enemy.pathTarget = goal;
+    enemy.pathRecalc = enemy.alerted ? 0.35 : 1.2;
+  }
+
+  const waypoint = enemy.path[0] || { x: targetX, y: targetY };
+  if (Math.hypot(waypoint.x - enemy.x, waypoint.y - enemy.y) < Math.max(12, enemy.radius)) {
+    enemy.path.shift();
+  }
+
+  const steerTarget = enemy.path[0] || { x: targetX, y: targetY };
+  const dir = normalize(steerTarget.x - enemy.x, steerTarget.y - enemy.y);
+  moveWithCollision(enemy, dir.x * enemy.speed * dt, dir.y * enemy.speed * dt, enemy.radius);
+
+  enemy.moving = true;
+  enemy.walkCycle += dt * (enemy.type === 'dog' ? 16 : 10);
 }
 
 function findNearestOpenPoint(x, y, radius) {
@@ -390,16 +568,24 @@ function update(dt) {
 
   for (const enemy of game.enemies) {
     if (enemy.hp <= 0) continue;
+    updateEnemyAwareness(enemy, p);
+
     const toPlayer = normalize(p.x - enemy.x, p.y - enemy.y);
     const distance = Math.hypot(p.x - enemy.x, p.y - enemy.y);
 
-    const chaseBuffer = enemy.type === 'dog' ? 28 : 120;
-    if (distance > chaseBuffer) {
-      moveWithCollision(enemy, toPlayer.x * enemy.speed * dt, toPlayer.y * enemy.speed * dt, enemy.radius);
-      enemy.moving = true;
-      enemy.walkCycle += dt * (enemy.type === 'dog' ? 16 : 10);
+    if (enemy.alerted) {
+      const chaseBuffer = enemy.type === 'dog' ? 34 : 140;
+      if (distance > chaseBuffer) {
+        moveEnemyToward(enemy, p.x, p.y, dt);
+      } else {
+        enemy.moving = false;
+      }
     } else {
-      enemy.moving = false;
+      const guardDistance = Math.hypot(enemy.x - enemy.guardTarget.x, enemy.y - enemy.guardTarget.y);
+      if (guardDistance < 18 || enemy.path.length === 0) {
+        enemy.guardTarget = chooseGuardPoint(enemy);
+      }
+      moveEnemyToward(enemy, enemy.guardTarget.x, enemy.guardTarget.y, dt);
     }
 
     enemy.cooldown -= dt;
@@ -415,7 +601,7 @@ function update(dt) {
       continue;
     }
 
-    if (distance < 620 && enemy.cooldown <= 0) {
+    if (enemy.alerted && distance < 620 && enemy.cooldown <= 0 && enemyCanSeePlayer(enemy, p)) {
       shootEnemyBullet(enemy, toPlayer);
       enemy.cooldown = 1.2 + Math.random() * 0.8;
     }
@@ -794,7 +980,7 @@ function updatePanel(livingEnemies) {
 
 function resizeCanvasToViewport() {
   const width = Math.max(960, Math.min(1700, window.innerWidth * 0.73));
-  const height = width / 2;
+  const height = width / 1.85;
 
   canvas.width = Math.round(width);
   canvas.height = Math.round(height);

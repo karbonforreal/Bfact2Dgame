@@ -6,6 +6,14 @@ const scoreboardEl = document.getElementById('scoreboard');
 const TILE = 64;
 const PLAYER_RADIUS = 18;
 
+const HUMANOID_VARIANTS = [
+  { skin: '#f0bf96', shirt: '#6ec2ff', pants: '#2f4f7d', hair: '#6b4428' },
+  { skin: '#e4a373', shirt: '#4dc7a4', pants: '#2a3e59', hair: '#2f1f1a' },
+  { skin: '#b9825b', shirt: '#f07f76', pants: '#3d3d63', hair: '#1d1b1b' },
+  { skin: '#8f5f3d', shirt: '#8f9eff', pants: '#2f374f', hair: '#131313' },
+  { skin: '#6b452f', shirt: '#f3c36c', pants: '#343047', hair: '#101010' }
+];
+
 const maps = [
   {
     name: 'Docking Ring',
@@ -20,7 +28,8 @@ const maps = [
       { x: 7, y: 4, hp: 55 },
       { x: 11, y: 12, hp: 65 },
       { x: 19, y: 10, hp: 65 },
-      { x: 17, y: 2, hp: 50 }
+      { x: 17, y: 2, hp: 50 },
+      { x: 20, y: 8, hp: 45, type: 'dog' }
     ],
     pickups: [
       { x: 3.5, y: 3.5, type: 'ammo', value: 15 },
@@ -45,7 +54,9 @@ const maps = [
       { x: 11, y: 3, hp: 70 },
       { x: 17, y: 11, hp: 80 },
       { x: 22, y: 5, hp: 80 },
-      { x: 24, y: 14, hp: 90 }
+      { x: 24, y: 14, hp: 90 },
+      { x: 13, y: 15, hp: 55, type: 'dog' },
+      { x: 21, y: 12, hp: 55, type: 'dog' }
     ],
     pickups: [
       { x: 2.5, y: 15.5, type: 'ammo', value: 20 },
@@ -72,7 +83,9 @@ const maps = [
       { x: 14, y: 11, hp: 95 },
       { x: 18, y: 5, hp: 90 },
       { x: 22, y: 14, hp: 100 },
-      { x: 25, y: 10, hp: 105 }
+      { x: 25, y: 10, hp: 105 },
+      { x: 12, y: 15, hp: 70, type: 'dog' },
+      { x: 24, y: 4, hp: 70, type: 'dog' }
     ],
     pickups: [
       { x: 2.5, y: 17.5, type: 'ammo', value: 20 },
@@ -149,15 +162,23 @@ function startMap(index, keepPlayerState = true) {
   };
 
   game.enemies = map.enemies.map((e, i) => {
-    const safeSpawn = findNearestOpenPoint(e.x * TILE, e.y * TILE, 16);
+    const type = e.type || 'humanoid';
+    const radius = type === 'dog' ? 14 : 16;
+    const safeSpawn = findNearestOpenPoint(e.x * TILE, e.y * TILE, radius);
+    const variant = HUMANOID_VARIANTS[Math.floor(Math.random() * HUMANOID_VARIANTS.length)];
     return {
       id: `${index}-${i}`,
+      type,
       x: safeSpawn.x,
       y: safeSpawn.y,
       hp: e.hp,
       maxHp: e.hp,
-      speed: 120 + Math.random() * 20,
-      cooldown: Math.random() * 0.8
+      speed: type === 'dog' ? 210 + Math.random() * 25 : 120 + Math.random() * 20,
+      cooldown: Math.random() * 0.8,
+      radius,
+      walkCycle: Math.random() * Math.PI * 2,
+      moving: false,
+      variant
     };
   });
 
@@ -372,17 +393,34 @@ function update(dt) {
     const toPlayer = normalize(p.x - enemy.x, p.y - enemy.y);
     const distance = Math.hypot(p.x - enemy.x, p.y - enemy.y);
 
-    if (distance > 120) {
-      moveWithCollision(enemy, toPlayer.x * enemy.speed * dt, toPlayer.y * enemy.speed * dt, 16);
+    const chaseBuffer = enemy.type === 'dog' ? 28 : 120;
+    if (distance > chaseBuffer) {
+      moveWithCollision(enemy, toPlayer.x * enemy.speed * dt, toPlayer.y * enemy.speed * dt, enemy.radius);
+      enemy.moving = true;
+      enemy.walkCycle += dt * (enemy.type === 'dog' ? 16 : 10);
+    } else {
+      enemy.moving = false;
     }
 
     enemy.cooldown -= dt;
+
+    if (enemy.type === 'dog') {
+      const meleeRange = TILE + enemy.radius;
+      if (distance < meleeRange && enemy.cooldown <= 0 && p.invulnerable <= 0) {
+        applyDamage(18);
+        p.invulnerable = 0.5;
+        enemy.cooldown = 0.85;
+        game.message = 'Dog rushed you!';
+      }
+      continue;
+    }
+
     if (distance < 620 && enemy.cooldown <= 0) {
       shootEnemyBullet(enemy, toPlayer);
       enemy.cooldown = 1.2 + Math.random() * 0.8;
     }
 
-    if (distance < PLAYER_RADIUS + 16 && p.invulnerable <= 0) {
+    if (distance < PLAYER_RADIUS + enemy.radius && p.invulnerable <= 0) {
       applyDamage(12);
       p.invulnerable = 0.55;
       game.message = 'Close contact!';
@@ -524,16 +562,17 @@ function draw() {
     if (enemy.hp <= 0) continue;
     const s = worldToScreen(enemy.x, enemy.y, camera);
 
-    ctx.fillStyle = '#ff6483';
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, 16, 0, Math.PI * 2);
-    ctx.fill();
+    if (enemy.type === 'dog') {
+      drawDogEnemy(enemy, s.x, s.y);
+    } else {
+      drawHumanoidEnemy(enemy, s.x, s.y);
+    }
 
     const hpRatio = enemy.hp / enemy.maxHp;
     ctx.fillStyle = '#1f2f3d';
-    ctx.fillRect(s.x - 18, s.y - 26, 36, 5);
+    ctx.fillRect(s.x - 18, s.y - 28, 36, 5);
     ctx.fillStyle = '#86ff95';
-    ctx.fillRect(s.x - 18, s.y - 26, 36 * hpRatio, 5);
+    ctx.fillRect(s.x - 18, s.y - 28, 36 * hpRatio, 5);
   }
 
   for (const bullet of game.bullets) {
@@ -615,6 +654,72 @@ function drawPlayer(player) {
   ctx.fillStyle = '#7ce6ff';
   ctx.fillRect(18, 3, 4, 2);
   ctx.restore();
+
+  ctx.restore();
+}
+
+function drawHumanoidEnemy(enemy, x, y) {
+  const palette = enemy.variant || HUMANOID_VARIANTS[0];
+  const bob = enemy.moving ? Math.sin(enemy.walkCycle * 2) * 1.5 : 0;
+  const step = enemy.moving ? Math.sin(enemy.walkCycle) * 4.5 : 0;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  ctx.fillStyle = palette.pants;
+  ctx.fillRect(-8, 9 + step, 6, 14);
+  ctx.fillRect(2, 9 - step, 6, 14);
+
+  ctx.fillStyle = '#201d1d';
+  ctx.fillRect(-9, 22 + step, 8, 3);
+  ctx.fillRect(1, 22 - step, 8, 3);
+
+  ctx.fillStyle = palette.shirt;
+  ctx.fillRect(-10, -3, 20, 14);
+
+  ctx.fillStyle = palette.skin;
+  ctx.fillRect(-13, 0, 3, 10);
+  ctx.fillRect(10, 0, 3, 10);
+  ctx.fillRect(-7, -15, 14, 12);
+
+  ctx.fillStyle = palette.hair;
+  ctx.fillRect(-7, -15, 14, 4);
+
+  ctx.fillStyle = '#1d2730';
+  ctx.fillRect(-4, -10, 2, 2);
+  ctx.fillRect(2, -10, 2, 2);
+
+  ctx.fillStyle = '#a83f45';
+  ctx.fillRect(8, 2, 9, 4);
+
+  ctx.restore();
+}
+
+function drawDogEnemy(enemy, x, y) {
+  const runOffset = enemy.moving ? Math.sin(enemy.walkCycle) * 3 : 0;
+  const bob = enemy.moving ? Math.cos(enemy.walkCycle * 2) * 1.2 : 0;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  ctx.fillStyle = '#6f5849';
+  ctx.fillRect(-14, -5, 24, 12);
+
+  ctx.fillStyle = '#5a463b';
+  ctx.fillRect(8, -8, 10, 10);
+
+  ctx.fillStyle = '#2b211d';
+  ctx.fillRect(14, -10, 3, 4);
+  ctx.fillRect(10, -10, 3, 4);
+
+  ctx.fillStyle = '#332923';
+  ctx.fillRect(-10, 6 + runOffset, 4, 10);
+  ctx.fillRect(-2, 6 - runOffset, 4, 10);
+  ctx.fillRect(4, 6 + runOffset, 4, 10);
+  ctx.fillRect(12, 6 - runOffset, 4, 10);
+
+  ctx.fillStyle = '#6f5849';
+  ctx.fillRect(-18, -6, 7, 3);
 
   ctx.restore();
 }

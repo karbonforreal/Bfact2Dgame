@@ -20,15 +20,15 @@ body {
 }
 
 .game-shell {
-  max-width: 1320px;
+  width: min(96vw, 1760px);
   margin: 0 auto;
-  padding: 14px;
+  padding: 14px 18px 18px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 330px);
   grid-template-areas:
     "header header"
     "canvas panel";
-  gap: 10px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -44,12 +44,14 @@ body {
 .hint {
   margin: 6px 0 10px;
   color: #b9cde4;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 #gameCanvas {
   grid-area: canvas;
   width: 100%;
+  aspect-ratio: 2 / 1;
+  min-height: min(74vh, 920px);
   border: 2px solid #2f516f;
   border-radius: 10px;
   background: #060b10;
@@ -59,19 +61,14 @@ body {
 
 .panel {
   grid-area: panel;
-  background: rgba(18, 31, 45, 0.92);
+  background: linear-gradient(180deg, rgba(20, 34, 49, 0.95), rgba(15, 27, 40, 0.92));
   border: 1px solid #2d4d69;
   border-radius: 10px;
-  padding: 10px;
+  padding: 12px;
   display: grid;
-  gap: 8px;
+  gap: 12px;
   align-content: start;
   min-height: 100%;
-}
-
-.panel p {
-  margin: 3px 0;
-  font-size: 0.92rem;
 }
 
 #status,
@@ -79,8 +76,131 @@ body {
   padding: 2px;
 }
 
+.hud-section {
+  display: grid;
+  gap: 8px;
+}
+
+.hud-title {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #87a4c0;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.meta-item {
+  border: 1px solid rgba(94, 141, 184, 0.5);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(6, 15, 24, 0.4);
+}
+
+.meta-label {
+  display: block;
+  font-size: 0.72rem;
+  color: #93abc3;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.meta-value {
+  display: block;
+  margin-top: 3px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.stat-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.stat-card {
+  border: 1px solid rgba(94, 141, 184, 0.35);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(8, 18, 28, 0.62);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.stat-label {
+  color: #9cb4cd;
+}
+
+.stat-value {
+  font-weight: 700;
+}
+
+.meter {
+  margin-top: 6px;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(21, 36, 51, 0.95);
+  border: 1px solid rgba(85, 130, 172, 0.35);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  transition: width 120ms ease-out;
+}
+
+.meter-fill.hp { background: linear-gradient(90deg, #5de874, #98ff6f); }
+.meter-fill.armor { background: linear-gradient(90deg, #41d9ff, #50f0ff); }
+.meter-fill.ammo { background: linear-gradient(90deg, #ffd25c, #ffe985); }
+.meter-fill.reload { background: linear-gradient(90deg, #ff8f66, #ffcb87); }
+
+.reload-wrap {
+  margin-top: 8px;
+}
+
+.status-text {
+  margin: 0;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(91, 129, 160, 0.45);
+  background: rgba(11, 20, 31, 0.74);
+  color: #d2e5f9;
+  font-size: 0.88rem;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.kpi {
+  border: 1px solid rgba(95, 133, 166, 0.42);
+  border-radius: 8px;
+  padding: 7px;
+  background: rgba(6, 15, 23, 0.42);
+}
+
+.kpi .meta-value {
+  font-size: 1rem;
+}
+
 @media (max-width: 1050px) {
   .game-shell {
+    width: 100%;
     grid-template-columns: 1fr;
     grid-template-areas:
       "header"
@@ -92,6 +212,10 @@ body {
     min-height: 0;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 12px;
+  }
+
+  #gameCanvas {
+    min-height: 0;
   }
 }
 

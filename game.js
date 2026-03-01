@@ -726,23 +726,81 @@ function drawDogEnemy(enemy, x, y) {
 
 function updatePanel(livingEnemies) {
   const p = game.player;
+  const hpRatio = Math.max(0, Math.min(1, p.hp / p.maxHp));
+  const armorRatio = Math.max(0, Math.min(1, p.armor / p.maxArmor));
+  const ammoRatio = Math.max(0, Math.min(1, p.ammoInMag / p.magazineSize));
+  const reloadRatio = p.reloading > 0 ? 1 - p.reloading / p.reloadTime : 0;
+  const statusMsg = p.reloading > 0 ? `Reloading... ${Math.round(reloadRatio * 100)}%` : game.message;
 
   statusEl.innerHTML = `
-    <p><strong>Map:</strong> <span class="value-accent">${game.activeMap.name}</span></p>
-    <p><strong>Level:</strong> <span class="value-accent">${game.mapIndex + 1}/${maps.length}</span></p>
-    <p><strong>HP:</strong> <span class="${p.hp < 35 ? 'value-danger' : 'value-good'}">${Math.max(0, Math.round(p.hp))}/${p.maxHp}</span></p>
-    <p><strong>Armor:</strong> <span class="${p.armor < 25 ? 'value-danger' : 'value-accent'}">${Math.max(0, Math.round(p.armor))}/${p.maxArmor}</span></p>
-    <p><strong>Ammo:</strong> <span class="value-accent">${p.ammoInMag}</span> / ${p.reserveAmmo} reserve</p>
-    <p><strong>Hostiles:</strong> ${livingEnemies}</p>
-    <p><strong>Pickups:</strong> A=Ammo, +=Health, 🛡=Armor</p>
+    <div class="hud-section">
+      <p class="hud-title">Mission Overview</p>
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Map</span>
+          <span class="meta-value value-accent">${game.activeMap.name}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Level</span>
+          <span class="meta-value value-accent">${game.mapIndex + 1}/${maps.length}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-section stat-stack">
+      <div class="stat-card">
+        <div class="stat-row"><span class="stat-label">HP</span><span class="stat-value ${p.hp < 35 ? 'value-danger' : 'value-good'}">${Math.max(0, Math.round(p.hp))}/${p.maxHp}</span></div>
+        <div class="meter"><div class="meter-fill hp" style="width:${hpRatio * 100}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-row"><span class="stat-label">Armor</span><span class="stat-value ${p.armor < 25 ? 'value-danger' : 'value-accent'}">${Math.max(0, Math.round(p.armor))}/${p.maxArmor}</span></div>
+        <div class="meter"><div class="meter-fill armor" style="width:${armorRatio * 100}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-row"><span class="stat-label">Ammo</span><span class="stat-value value-accent">${p.ammoInMag}/${p.magazineSize} <small>· ${p.reserveAmmo} reserve</small></span></div>
+        <div class="meter"><div class="meter-fill ammo" style="width:${ammoRatio * 100}%"></div></div>
+        ${p.reloading > 0 ? `<div class="reload-wrap"><div class="stat-row"><span class="stat-label">Reload</span><span class="stat-value value-accent">${Math.round(reloadRatio * 100)}%</span></div><div class="meter"><div class="meter-fill reload" style="width:${reloadRatio * 100}%"></div></div></div>` : ''}
+      </div>
+    </div>
+
+    <p class="status-text"><strong>Status:</strong> ${statusMsg}</p>
+    <p class="status-text"><strong>Pickups:</strong> A = Ammo · + = Health · 🛡 = Armor</p>
   `;
 
   scoreboardEl.innerHTML = `
-    <p><strong>Wins:</strong> <span class="value-good">${game.wins}</span></p>
-    <p><strong>Losses:</strong> <span class="value-danger">${game.losses}</span></p>
-    <p><strong>Kills this run:</strong> ${game.killCount}</p>
-    <p><strong>Status:</strong> ${game.message}</p>
+    <div class="hud-section">
+      <p class="hud-title">Run Stats</p>
+      <div class="kpi-row">
+        <div class="kpi">
+          <span class="meta-label">Wins</span>
+          <span class="meta-value value-good">${game.wins}</span>
+        </div>
+        <div class="kpi">
+          <span class="meta-label">Losses</span>
+          <span class="meta-value value-danger">${game.losses}</span>
+        </div>
+        <div class="kpi">
+          <span class="meta-label">Hostiles</span>
+          <span class="meta-value">${livingEnemies}</span>
+        </div>
+      </div>
+      <div class="kpi">
+        <span class="meta-label">Kills this run</span>
+        <span class="meta-value">${game.killCount}</span>
+      </div>
+    </div>
   `;
+}
+
+function resizeCanvasToViewport() {
+  const width = Math.max(960, Math.min(1700, window.innerWidth * 0.73));
+  const height = width / 2;
+
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
+
+  game.mouse.x = canvas.width / 2;
+  game.mouse.y = canvas.height / 2;
 }
 
 function gameLoop(timestamp) {
@@ -780,6 +838,9 @@ window.addEventListener('mouseup', () => {
   game.mouse.down = false;
 });
 
+window.addEventListener('resize', resizeCanvasToViewport);
+
+resizeCanvasToViewport();
 startMap(0, false);
 updatePanel(game.enemies.length);
 requestAnimationFrame(gameLoop);

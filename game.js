@@ -14,6 +14,25 @@ const HUMANOID_VARIANTS = [
   { skin: '#6b452f', shirt: '#f3c36c', pants: '#343047', hair: '#101010' }
 ];
 
+const WEAPONS = {
+  blaster: {
+    name: 'Blaster',
+    slot: '1',
+    cooldown: 0.16,
+    damage: 22,
+    projectileSpeed: 720,
+    spread: 0.08
+  },
+  knife: {
+    name: 'Knife',
+    slot: '2',
+    cooldown: 0.32,
+    damage: 38,
+    range: 74,
+    arc: Math.PI * 0.48
+  }
+};
+
 const maps = [
   {
     name: 'Docking Ring',
@@ -119,6 +138,7 @@ const game = {
     magazineSize: 12,
     ammoInMag: 12,
     reserveAmmo: 60,
+    activeWeapon: 'blaster',
     reloadTime: 1.2,
     reloading: 0,
     invulnerable: 0,
@@ -173,7 +193,13 @@ function startMap(index, keepPlayerState = true) {
   game.enemies = map.enemies.map((e, i) => {
     const type = e.type || 'humanoid';
     const radius = type === 'dog' ? 14 : 16;
-    const safeSpawn = findNearestOpenPoint(e.x * TILE, e.y * TILE, radius);
+    const safeSpawn = findReachableOpenPoint(
+      e.x * TILE,
+      e.y * TILE,
+      radius,
+      playerSpawn.x,
+      playerSpawn.y
+    );
     const variant = HUMANOID_VARIANTS[Math.floor(Math.random() * HUMANOID_VARIANTS.length)];
     return {
       id: `${index}-${i}`,
@@ -198,9 +224,14 @@ function startMap(index, keepPlayerState = true) {
   });
 
   game.pickups = map.pickups.map((p, i) => ({
+    ...findReachableOpenPoint(
+      p.x * TILE,
+      p.y * TILE,
+      12,
+      playerSpawn.x,
+      playerSpawn.y
+    ),
     id: `${index}-p-${i}`,
-    x: p.x * TILE,
-    y: p.y * TILE,
     type: p.type,
     value: p.value,
     alive: true
@@ -351,6 +382,40 @@ function buildPath(start, goal, radius) {
   return path;
 }
 
+function buildReachableTileSet(origin, radius) {
+  const grid = getWalkGrid(radius);
+  const width = game.activeMap.width;
+  const height = game.activeMap.height;
+  if (!grid[origin.ty]?.[origin.tx]) return new Set();
+
+  const visited = new Set([`${origin.tx},${origin.ty}`]);
+  const queue = [origin];
+  let head = 0;
+  const neighbors = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 }
+  ];
+
+  while (head < queue.length) {
+    const node = queue[head++];
+    for (const offset of neighbors) {
+      const nx = node.tx + offset.x;
+      const ny = node.ty + offset.y;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+      if (!grid[ny][nx]) continue;
+
+      const key = `${nx},${ny}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+      queue.push({ tx: nx, ty: ny });
+    }
+  }
+
+  return visited;
+}
+
 function enemyCanSeePlayer(enemy, player) {
   const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
   if (distance > 680) return false;
@@ -440,6 +505,31 @@ function findNearestOpenPoint(x, y, radius) {
   return { x, y };
 }
 
+function findReachableOpenPoint(x, y, radius, originX, originY) {
+  const fallback = findNearestOpenPoint(x, y, radius);
+  const origin = worldToTile(originX, originY);
+  const reachable = buildReachableTileSet(origin, radius);
+  if (reachable.size === 0) return fallback;
+
+  const preferred = worldToTile(fallback.x, fallback.y);
+  const preferredKey = `${preferred.tx},${preferred.ty}`;
+  if (reachable.has(preferredKey)) return fallback;
+
+  let closest = null;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const key of reachable) {
+    const [tx, ty] = key.split(',').map(Number);
+    const center = tileCenter(tx, ty);
+    const dist = Math.hypot(center.x - x, center.y - y);
+    if (dist < bestDist) {
+      bestDist = dist;
+      closest = center;
+    }
+  }
+
+  return closest || fallback;
+}
+
 function moveWithCollision(entity, dx, dy, radius) {
   const steps = 4;
   for (let i = 0; i < steps; i += 1) {
@@ -463,22 +553,64 @@ function normalize(dx, dy) {
   return { x: dx / mag, y: dy / mag };
 }
 
-function shootPlayerBullet() {
+function performKnifeAttack() {
   const p = game.player;
-  if (p.fireCooldown > 0 || p.reloading > 0 || p.ammoInMag <= 0) return;
+  const knife = WEAPONS.knife;
+  let hitSomeone = false;
+
+  for (const enemy of game.enemies) {
+    if (enemy.hp <= 0) continue;
+    const dx = enemy.x - p.x;
+    const dy = enemy.y - p.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > knife.range + enemy.radius) continue;
+
+    const enemyAngle = Math.atan2(dy, dx);
+    const delta = Math.atan2(Math.sin(enemyAngle - p.angle), Math.cos(enemyAngle - p.angle));
+    if (Math.abs(delta) > knife.arc / 2) continue;
+    if (!hasLineOfSight(p.x, p.y, enemy.x, enemy.y, 10)) continue;
+
+    enemy.hp -= knife.damage;
+    hitSomeone = true;
+    if (enemy.hp <= 0) {
+      game.killCount += 1;
+      game.message = `Knifed target (${game.killCount})`;
+    } else {
+      game.message = 'Knife hit!';
+    }
+  }
+
+  if (!hitSomeone) {
+    game.message = 'Knife swing missed.';
+  }
+}
+
+function shootPlayerWeapon() {
+  const p = game.player;
+  if (p.fireCooldown > 0 || p.reloading > 0) return;
+
+  if (p.activeWeapon === 'knife') {
+    p.fireCooldown = WEAPONS.knife.cooldown;
+    performKnifeAttack();
+    return;
+  }
+
+  if (p.ammoInMag <= 0) return;
+
+  const blaster = WEAPONS.blaster;
 
   p.ammoInMag -= 1;
-  p.fireCooldown = 0.16;
+  p.fireCooldown = blaster.cooldown;
 
-  const spread = (Math.random() - 0.5) * 0.08;
+  const spread = (Math.random() - 0.5) * blaster.spread;
   const ang = p.angle + spread;
 
   game.bullets.push({
     x: p.x + Math.cos(ang) * 20,
     y: p.y + Math.sin(ang) * 20,
-    vx: Math.cos(ang) * 720,
-    vy: Math.sin(ang) * 720,
-    damage: 22,
+    vx: Math.cos(ang) * blaster.projectileSpeed,
+    vy: Math.sin(ang) * blaster.projectileSpeed,
+    damage: blaster.damage,
     life: 1.05
   });
 }
@@ -537,9 +669,7 @@ function update(dt) {
 
   p.angle = Math.atan2(game.mouse.y - canvas.height / 2, game.mouse.x - canvas.width / 2);
 
-  if (game.mouse.down) {
-    shootPlayerBullet();
-  }
+  if (game.mouse.down) shootPlayerWeapon();
 
   for (const bullet of game.bullets) {
     bullet.x += bullet.vx * dt;
@@ -832,13 +962,21 @@ function drawPlayer(player) {
   ctx.fillRect(-4, -10, 2, 2);
   ctx.fillRect(2, -10, 2, 2);
 
-  // Blaster + facing direction
+  // Weapon + facing direction
   ctx.save();
   ctx.scale(facing, 1);
-  ctx.fillStyle = '#23384d';
-  ctx.fillRect(8, 2, 12, 4);
-  ctx.fillStyle = '#7ce6ff';
-  ctx.fillRect(18, 3, 4, 2);
+  if (player.activeWeapon === 'knife') {
+    ctx.fillStyle = '#303b45';
+    ctx.fillRect(8, 3, 4, 3);
+    ctx.fillStyle = '#d9e7f2';
+    ctx.fillRect(12, 2, 10, 2);
+    ctx.fillRect(12, 4, 10, 1);
+  } else {
+    ctx.fillStyle = '#23384d';
+    ctx.fillRect(8, 2, 12, 4);
+    ctx.fillStyle = '#7ce6ff';
+    ctx.fillRect(18, 3, 4, 2);
+  }
   ctx.restore();
 
   ctx.restore();
@@ -916,6 +1054,7 @@ function updatePanel(livingEnemies) {
   const armorRatio = Math.max(0, Math.min(1, p.armor / p.maxArmor));
   const ammoRatio = Math.max(0, Math.min(1, p.ammoInMag / p.magazineSize));
   const reloadRatio = p.reloading > 0 ? 1 - p.reloading / p.reloadTime : 0;
+  const activeWeapon = WEAPONS[p.activeWeapon];
   const statusMsg = p.reloading > 0 ? `Reloading... ${Math.round(reloadRatio * 100)}%` : game.message;
 
   statusEl.innerHTML = `
@@ -946,6 +1085,10 @@ function updatePanel(livingEnemies) {
         <div class="stat-row"><span class="stat-label">Ammo</span><span class="stat-value value-accent">${p.ammoInMag}/${p.magazineSize} <small>· ${p.reserveAmmo} reserve</small></span></div>
         <div class="meter"><div class="meter-fill ammo" style="width:${ammoRatio * 100}%"></div></div>
         ${p.reloading > 0 ? `<div class="reload-wrap"><div class="stat-row"><span class="stat-label">Reload</span><span class="stat-value value-accent">${Math.round(reloadRatio * 100)}%</span></div><div class="meter"><div class="meter-fill reload" style="width:${reloadRatio * 100}%"></div></div></div>` : ''}
+      </div>
+      <div class="stat-card">
+        <div class="stat-row"><span class="stat-label">Weapon</span><span class="stat-value value-accent">${activeWeapon.name} <small>(press 1/2)</small></span></div>
+        <div class="meter"><div class="meter-fill armor" style="width:100%"></div></div>
       </div>
     </div>
 
@@ -1004,6 +1147,14 @@ window.addEventListener('keydown', (e) => {
   game.keys.add(key);
 
   if (key === 'r') reloadWeapon();
+  if (key === WEAPONS.blaster.slot) {
+    game.player.activeWeapon = 'blaster';
+    game.message = 'Switched to blaster.';
+  }
+  if (key === WEAPONS.knife.slot) {
+    game.player.activeWeapon = 'knife';
+    game.message = 'Switched to knife.';
+  }
 });
 
 window.addEventListener('keyup', (e) => {

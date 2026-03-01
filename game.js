@@ -21,11 +21,45 @@ const WEAPONS = {
     cooldown: 0.16,
     damage: 22,
     projectileSpeed: 720,
-    spread: 0.08
+    spread: 0.08,
+    magazineSize: 12,
+    reloadTime: 1.2,
+    reserveAmmo: 60,
+    ammoPickupType: 'ammo-blaster',
+    ammoPickupValue: 15
+  },
+  shotgun: {
+    name: 'Shotgun',
+    slot: '2',
+    cooldown: 0.55,
+    damage: 14,
+    projectileSpeed: 640,
+    spread: 0.34,
+    pelletCount: 5,
+    magazineSize: 2,
+    reloadTime: 1.95,
+    reserveAmmo: 12,
+    maxDistance: TILE * 3,
+    ammoPickupType: 'ammo-shotgun',
+    ammoPickupValue: 4
+  },
+  sniper: {
+    name: 'Sniper',
+    slot: '3',
+    cooldown: 0.95,
+    damage: 65,
+    projectileSpeed: 1200,
+    spread: 0.015,
+    magazineSize: 3,
+    reloadTime: 2.5,
+    reserveAmmo: 15,
+    pierceCount: 3,
+    ammoPickupType: 'ammo-sniper',
+    ammoPickupValue: 3
   },
   knife: {
     name: 'Knife',
-    slot: '2',
+    slot: '4',
     cooldown: 0.32,
     damage: 38,
     range: 74,
@@ -51,7 +85,7 @@ const maps = [
       { x: 20, y: 8, hp: 45, type: 'dog' }
     ],
     pickups: [
-      { x: 3.5, y: 3.5, type: 'ammo', value: 15 },
+      { x: 3.5, y: 3.5, type: 'ammo-blaster', value: 15 },
       { x: 20.5, y: 13.5, type: 'health', value: 20 },
       { x: 11.5, y: 8.5, type: 'armor', value: 20 }
     ],
@@ -78,9 +112,9 @@ const maps = [
       { x: 21, y: 12, hp: 55, type: 'dog' }
     ],
     pickups: [
-      { x: 2.5, y: 15.5, type: 'ammo', value: 20 },
+      { x: 2.5, y: 15.5, type: 'ammo-blaster', value: 20 },
       { x: 25.5, y: 2.5, type: 'health', value: 25 },
-      { x: 14.5, y: 10.5, type: 'ammo', value: 10 },
+      { x: 14.5, y: 10.5, type: 'ammo-shotgun', value: 4 },
       { x: 20.5, y: 15.5, type: 'armor', value: 25 }
     ],
     spawn: { x: 2.5, y: 2.5 },
@@ -107,10 +141,10 @@ const maps = [
       { x: 24, y: 4, hp: 70, type: 'dog' }
     ],
     pickups: [
-      { x: 2.5, y: 17.5, type: 'ammo', value: 20 },
+      { x: 2.5, y: 17.5, type: 'ammo-sniper', value: 3 },
       { x: 13.5, y: 3.5, type: 'health', value: 25 },
       { x: 21.5, y: 16.5, type: 'armor', value: 35 },
-      { x: 27.5, y: 2.5, type: 'ammo', value: 15 }
+      { x: 27.5, y: 2.5, type: 'ammo-blaster', value: 15 }
     ],
     spawn: { x: 2.5, y: 2.5 },
     exit: { x: 27.5, y: 17.5 }
@@ -135,11 +169,12 @@ const game = {
     speed: 280,
     fireCooldown: 0,
     angle: 0,
-    magazineSize: 12,
-    ammoInMag: 12,
-    reserveAmmo: 60,
     activeWeapon: 'blaster',
-    reloadTime: 1.2,
+    ammo: {
+      blaster: { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo },
+      shotgun: { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo },
+      sniper: { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo }
+    },
     reloading: 0,
     invulnerable: 0,
     walkCycle: 0,
@@ -157,6 +192,15 @@ const game = {
   navGridCache: new Map()
 };
 
+
+function currentWeapon() {
+  return WEAPONS[game.player.activeWeapon];
+}
+
+function ammoState(weaponKey = game.player.activeWeapon) {
+  return game.player.ammo[weaponKey] || null;
+}
+
 function mapBoundsPx() {
   return {
     width: game.activeMap.width * TILE,
@@ -173,7 +217,6 @@ function startMap(index, keepPlayerState = true) {
   const prev = game.player;
   const hp = keepPlayerState ? Math.max(prev.hp, 30) : prev.maxHp;
   const armor = keepPlayerState ? prev.armor : 40;
-  const reserve = keepPlayerState ? prev.reserveAmmo : 60;
 
   const playerSpawn = findNearestOpenPoint(map.spawn.x * TILE, map.spawn.y * TILE, PLAYER_RADIUS);
 
@@ -183,8 +226,20 @@ function startMap(index, keepPlayerState = true) {
     y: playerSpawn.y,
     hp,
     armor,
-    reserveAmmo: reserve,
-    ammoInMag: Math.min(prev.ammoInMag, prev.magazineSize),
+    ammo: {
+      blaster: {
+        mag: keepPlayerState ? Math.min(prev.ammo.blaster.mag, WEAPONS.blaster.magazineSize) : WEAPONS.blaster.magazineSize,
+        reserve: keepPlayerState ? prev.ammo.blaster.reserve : WEAPONS.blaster.reserveAmmo
+      },
+      shotgun: {
+        mag: keepPlayerState ? Math.min(prev.ammo.shotgun.mag, WEAPONS.shotgun.magazineSize) : WEAPONS.shotgun.magazineSize,
+        reserve: keepPlayerState ? prev.ammo.shotgun.reserve : WEAPONS.shotgun.reserveAmmo
+      },
+      sniper: {
+        mag: keepPlayerState ? Math.min(prev.ammo.sniper.mag, WEAPONS.sniper.magazineSize) : WEAPONS.sniper.magazineSize,
+        reserve: keepPlayerState ? prev.ammo.sniper.reserve : WEAPONS.sniper.reserveAmmo
+      }
+    },
     fireCooldown: 0,
     reloading: 0,
     invulnerable: 0.4,
@@ -252,8 +307,9 @@ function resetRun(lostRound = false) {
   game.killCount = 0;
   game.player.hp = game.player.maxHp;
   game.player.armor = 40;
-  game.player.reserveAmmo = 60;
-  game.player.ammoInMag = game.player.magazineSize;
+  game.player.ammo.blaster = { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo };
+  game.player.ammo.shotgun = { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo };
+  game.player.ammo.sniper = { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo };
   startMap(0, false);
 }
 
@@ -613,30 +669,38 @@ function shootPlayerWeapon() {
     return;
   }
 
-  if (p.ammoInMag <= 0) return;
+  const weapon = currentWeapon();
+  const ammo = ammoState();
+  if (!weapon || !ammo || ammo.mag <= 0) return;
 
-  const blaster = WEAPONS.blaster;
+  ammo.mag -= 1;
+  p.fireCooldown = weapon.cooldown;
 
-  p.ammoInMag -= 1;
-  p.fireCooldown = blaster.cooldown;
+  const pellets = weapon.pelletCount || 1;
+  for (let i = 0; i < pellets; i += 1) {
+    const spread = (Math.random() - 0.5) * weapon.spread;
+    const ang = p.angle + spread;
+    game.bullets.push({
+      x: p.x + Math.cos(ang) * 20,
+      y: p.y + Math.sin(ang) * 20,
+      vx: Math.cos(ang) * weapon.projectileSpeed,
+      vy: Math.sin(ang) * weapon.projectileSpeed,
+      damage: weapon.damage,
+      life: 1.4,
+      weapon: p.activeWeapon,
+      travelled: 0,
+      maxDistance: weapon.maxDistance || Number.POSITIVE_INFINITY,
+      pierceLeft: weapon.pierceCount || 1,
+      hitTargets: new Set()
+    });
+  }
 
-  const spread = (Math.random() - 0.5) * blaster.spread;
-  const ang = p.angle + spread;
-
-  game.bullets.push({
-    x: p.x + Math.cos(ang) * 20,
-    y: p.y + Math.sin(ang) * 20,
-    vx: Math.cos(ang) * blaster.projectileSpeed,
-    vy: Math.sin(ang) * blaster.projectileSpeed,
-    damage: blaster.damage,
-    life: 1.05
-  });
-
+  const flashColor = p.activeWeapon === 'sniper' ? '#ff6d6d' : p.activeWeapon === 'shotgun' ? '#ffd58f' : '#9bf7ff';
   spawnMuzzleFlash(
     p.x + Math.cos(p.angle) * 26,
     p.y + Math.sin(p.angle) * 26,
     p.angle,
-    '#9bf7ff'
+    flashColor
   );
 }
 
@@ -660,9 +724,14 @@ function shootEnemyBullet(enemy, dir) {
 
 function reloadWeapon() {
   const p = game.player;
-  if (p.reloading > 0 || p.ammoInMag === p.magazineSize || p.reserveAmmo <= 0) return;
-  p.reloading = p.reloadTime;
-  game.message = 'Reloading...';
+  if (p.activeWeapon === 'knife') return;
+  const weapon = currentWeapon();
+  const ammo = ammoState();
+  if (!weapon || !ammo) return;
+  if (p.reloading > 0 || ammo.mag >= weapon.magazineSize || ammo.reserve <= 0) return;
+
+  p.reloading = weapon.reloadTime;
+  game.message = `Reloading ${weapon.name}...`;
 }
 
 function update(dt) {
@@ -675,12 +744,14 @@ function update(dt) {
   p.invulnerable = Math.max(0, p.invulnerable - dt);
   p.knifeAnim = Math.max(0, p.knifeAnim - dt);
 
-  if (p.reloading === 0 && p.ammoInMag < p.magazineSize && game.message === 'Reloading...') {
-    const needed = p.magazineSize - p.ammoInMag;
-    const used = Math.min(needed, p.reserveAmmo);
-    p.ammoInMag += used;
-    p.reserveAmmo -= used;
-    game.message = 'Magazine topped up.';
+  const currentAmmo = ammoState();
+  const weapon = currentWeapon();
+  if (weapon && currentAmmo && p.reloading === 0 && currentAmmo.mag < weapon.magazineSize && game.message.startsWith('Reloading')) {
+    const needed = weapon.magazineSize - currentAmmo.mag;
+    const used = Math.min(needed, currentAmmo.reserve);
+    currentAmmo.mag += used;
+    currentAmmo.reserve -= used;
+    game.message = `${weapon.name} reloaded.`;
   }
 
   let mx = 0;
@@ -705,26 +776,33 @@ function update(dt) {
   if (game.mouse.down) shootPlayerWeapon();
 
   for (const bullet of game.bullets) {
-    bullet.x += bullet.vx * dt;
-    bullet.y += bullet.vy * dt;
+    const stepX = bullet.vx * dt;
+    const stepY = bullet.vy * dt;
+    bullet.x += stepX;
+    bullet.y += stepY;
     bullet.life -= dt;
+    bullet.travelled += Math.hypot(stepX, stepY);
 
-    if (blockedAt(bullet.x, bullet.y, 4)) {
+    if (bullet.travelled >= bullet.maxDistance || blockedAt(bullet.x, bullet.y, 4)) {
       bullet.life = 0;
       continue;
     }
 
     for (const enemy of game.enemies) {
-      if (enemy.hp <= 0) continue;
+      if (enemy.hp <= 0 || bullet.hitTargets.has(enemy.id)) continue;
       const dist = Math.hypot(enemy.x - bullet.x, enemy.y - bullet.y);
-      if (dist < 18) {
+      if (dist < enemy.radius + 4) {
         enemy.hp -= bullet.damage;
-        bullet.life = 0;
+        bullet.hitTargets.add(enemy.id);
+        bullet.pierceLeft -= 1;
         if (enemy.hp <= 0) {
           game.killCount += 1;
           game.message = `Target down (${game.killCount})`;
         }
-        break;
+        if (bullet.pierceLeft <= 0) {
+          bullet.life = 0;
+          break;
+        }
       }
     }
   }
@@ -800,9 +878,12 @@ function update(dt) {
     if (!pickup.alive) continue;
     if (Math.hypot(p.x - pickup.x, p.y - pickup.y) < 28) {
       pickup.alive = false;
-      if (pickup.type === 'ammo') {
-        p.reserveAmmo += pickup.value;
-        game.message = `Picked up ammo +${pickup.value}`;
+      if (pickup.type.startsWith('ammo-')) {
+        const weaponKey = pickup.type.replace('ammo-', '');
+        if (p.ammo[weaponKey]) {
+          p.ammo[weaponKey].reserve += pickup.value;
+          game.message = `Picked up ${WEAPONS[weaponKey].name} ammo +${pickup.value}`;
+        }
       } else if (pickup.type === 'health') {
         p.hp = Math.min(p.maxHp, p.hp + pickup.value);
         game.message = `Picked up health +${pickup.value}`;
@@ -929,21 +1010,44 @@ function drawExitStairs(x, y) {
   ctx.restore();
 }
 
-function drawAmmoPickupIcon(x, y) {
+function drawAmmoPickupIcon(x, y, ammoType) {
   ctx.save();
   ctx.translate(x, y);
 
-  const bulletOffsets = [-5, 0, 5];
-  for (const offset of bulletOffsets) {
-    ctx.fillStyle = '#ffe2a4';
-    ctx.fillRect(offset - 1.8, -4.5, 3.6, 7);
-    ctx.fillStyle = '#c8913a';
+  if (ammoType === 'ammo-shotgun') {
+    ctx.fillStyle = '#203040';
+    ctx.fillRect(-7, -5, 14, 10);
+    ctx.fillStyle = '#ff5648';
+    ctx.fillRect(-6, -4, 12, 8);
+    ctx.fillStyle = '#ffe8ca';
+    ctx.fillRect(-3, -4, 6, 2);
+  } else if (ammoType === 'ammo-sniper') {
+    ctx.fillStyle = '#1f2a38';
+    ctx.fillRect(-2.2, -7, 4.4, 12);
+    ctx.fillStyle = '#d84a4a';
     ctx.beginPath();
-    ctx.moveTo(offset - 1.8, -4.5);
-    ctx.lineTo(offset + 1.8, -4.5);
-    ctx.lineTo(offset, -7.5);
+    ctx.moveTo(-2.2, -7);
+    ctx.lineTo(2.2, -7);
+    ctx.lineTo(0, -10.2);
     ctx.closePath();
     ctx.fill();
+    ctx.fillStyle = '#f6f8ff';
+    ctx.fillRect(-1, 4, 2, 3);
+  } else {
+    const bulletOffsets = [-5, 0, 5];
+    for (const offset of bulletOffsets) {
+      ctx.fillStyle = '#2a3442';
+      ctx.fillRect(offset - 2.2, -5, 4.4, 8.4);
+      ctx.fillStyle = '#f5f8ff';
+      ctx.fillRect(offset - 1.2, -4.2, 2.4, 6.8);
+      ctx.fillStyle = '#d17a23';
+      ctx.beginPath();
+      ctx.moveTo(offset - 1.2, -4.2);
+      ctx.lineTo(offset + 1.2, -4.2);
+      ctx.lineTo(offset, -7.4);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 
   ctx.restore();
@@ -985,12 +1089,14 @@ function draw() {
   for (const pickup of game.pickups) {
     if (!pickup.alive) continue;
     const s = worldToScreen(pickup.x, pickup.y, camera);
-    if (pickup.type === 'ammo') ctx.fillStyle = '#ffd062';
+    if (pickup.type === 'ammo-blaster') ctx.fillStyle = '#f1af3a';
+    if (pickup.type === 'ammo-shotgun') ctx.fillStyle = '#ff7d57';
+    if (pickup.type === 'ammo-sniper') ctx.fillStyle = '#ff5470';
     if (pickup.type === 'health') ctx.fillStyle = '#7bff9f';
     if (pickup.type === 'armor') ctx.fillStyle = '#7bf9ff';
     ctx.fillRect(s.x - 10, s.y - 10, 20, 20);
 
-    if (pickup.type === 'ammo') drawAmmoPickupIcon(s.x, s.y + 1);
+    if (pickup.type.startsWith('ammo-')) drawAmmoPickupIcon(s.x, s.y + 1, pickup.type);
     if (pickup.type === 'health') drawHealthPickupIcon(s.x, s.y);
     if (pickup.type === 'armor') {
       ctx.fillStyle = '#1d2b38';
@@ -1034,7 +1140,7 @@ function draw() {
 
   for (const bullet of game.bullets) {
     const s = worldToScreen(bullet.x, bullet.y, camera);
-    ctx.fillStyle = '#79e8ff';
+    ctx.fillStyle = bullet.weapon === 'sniper' ? '#ff5f5f' : bullet.weapon === 'shotgun' ? '#ffd9a1' : '#79e8ff';
     ctx.beginPath();
     ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
     ctx.fill();
@@ -1069,6 +1175,15 @@ function draw() {
     ctx.arc(0, 0, flashSize * 0.55, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
+
+  if (p.activeWeapon === 'sniper') {
+    ctx.strokeStyle = 'rgba(255, 54, 54, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2 + Math.cos(p.angle) * 20, canvas.height / 2 + Math.sin(p.angle) * 20);
+    ctx.lineTo(game.mouse.x, game.mouse.y);
+    ctx.stroke();
   }
 
   drawPlayer(p);
@@ -1142,6 +1257,22 @@ function drawPlayer(player) {
     ctx.fillStyle = '#d9e7f2';
     ctx.fillRect(12 + knifeStabOffset, -2, 12, 2);
     ctx.fillRect(12 + knifeStabOffset, 0, 12, 1);
+  } else if (player.activeWeapon === 'shotgun') {
+    ctx.fillStyle = '#2a3540';
+    ctx.fillRect(7, -3, 15, 6);
+    ctx.fillStyle = '#7a4f2c';
+    ctx.fillRect(6, -2, 7, 4);
+    ctx.fillStyle = '#b7c9d6';
+    ctx.fillRect(21, -2, 4, 4);
+  } else if (player.activeWeapon === 'sniper') {
+    ctx.fillStyle = '#263445';
+    ctx.fillRect(6, -2, 24, 4);
+    ctx.fillStyle = '#3f556c';
+    ctx.fillRect(12, -5, 9, 3);
+    ctx.fillStyle = '#0f1620';
+    ctx.fillRect(14, -7, 6, 2);
+    ctx.fillStyle = '#ff6565';
+    ctx.fillRect(28, -1, 3, 2);
   } else {
     ctx.fillStyle = '#23384d';
     ctx.fillRect(8, -2, 12, 4);
@@ -1224,9 +1355,11 @@ function updatePanel(livingEnemies) {
   const p = game.player;
   const hpRatio = Math.max(0, Math.min(1, p.hp / p.maxHp));
   const armorRatio = Math.max(0, Math.min(1, p.armor / p.maxArmor));
-  const ammoRatio = Math.max(0, Math.min(1, p.ammoInMag / p.magazineSize));
-  const reloadRatio = p.reloading > 0 ? 1 - p.reloading / p.reloadTime : 0;
   const activeWeapon = WEAPONS[p.activeWeapon];
+  const activeAmmo = ammoState();
+  const magSize = activeWeapon.magazineSize || 1;
+  const ammoRatio = activeAmmo ? Math.max(0, Math.min(1, activeAmmo.mag / magSize)) : 1;
+  const reloadRatio = p.reloading > 0 ? 1 - p.reloading / (activeWeapon.reloadTime || 1) : 0;
   const statusMsg = p.reloading > 0 ? `Reloading... ${Math.round(reloadRatio * 100)}%` : game.message;
 
   statusEl.innerHTML = `
@@ -1254,18 +1387,18 @@ function updatePanel(livingEnemies) {
         <div class="meter"><div class="meter-fill armor" style="width:${armorRatio * 100}%"></div></div>
       </div>
       <div class="stat-card">
-        <div class="stat-row"><span class="stat-label">Ammo</span><span class="stat-value value-accent">${p.ammoInMag}/${p.magazineSize} <small>· ${p.reserveAmmo} reserve</small></span></div>
+        <div class="stat-row"><span class="stat-label">Ammo</span><span class="stat-value value-accent">${activeAmmo ? `${activeAmmo.mag}/${magSize} <small>· ${activeAmmo.reserve} reserve</small>` : '∞'}</span></div>
         <div class="meter"><div class="meter-fill ammo" style="width:${ammoRatio * 100}%"></div></div>
         ${p.reloading > 0 ? `<div class="reload-wrap"><div class="stat-row"><span class="stat-label">Reload</span><span class="stat-value value-accent">${Math.round(reloadRatio * 100)}%</span></div><div class="meter"><div class="meter-fill reload" style="width:${reloadRatio * 100}%"></div></div></div>` : ''}
       </div>
       <div class="stat-card">
-        <div class="stat-row"><span class="stat-label">Weapon</span><span class="stat-value value-accent">${activeWeapon.name} <small>(press 1/2)</small></span></div>
+        <div class="stat-row"><span class="stat-label">Weapon</span><span class="stat-value value-accent">${activeWeapon.name} <small>(press 1/2/3/4)</small></span></div>
         <div class="meter"><div class="meter-fill armor" style="width:100%"></div></div>
       </div>
     </div>
 
     <p class="status-text"><strong>Status:</strong> ${statusMsg}</p>
-    <p class="status-text"><strong>Pickups:</strong> bullets = Ammo · med kit = Health · 🛡 = Armor</p>
+    <p class="status-text"><strong>Pickups:</strong> yellow rounds = Blaster · red shells = Shotgun · crimson dart = Sniper · med kit = Health · 🛡 = Armor</p>
   `;
 
   scoreboardEl.innerHTML = `
@@ -1322,6 +1455,14 @@ window.addEventListener('keydown', (e) => {
   if (key === WEAPONS.blaster.slot) {
     game.player.activeWeapon = 'blaster';
     game.message = 'Switched to blaster.';
+  }
+  if (key === WEAPONS.shotgun.slot) {
+    game.player.activeWeapon = 'shotgun';
+    game.message = 'Switched to shotgun.';
+  }
+  if (key === WEAPONS.sniper.slot) {
+    game.player.activeWeapon = 'sniper';
+    game.message = 'Switched to sniper.';
   }
   if (key === WEAPONS.knife.slot) {
     game.player.activeWeapon = 'knife';

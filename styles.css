@@ -198,6 +198,37 @@ body {
   font-size: 1rem;
 }
 
+.settings-card {
+  border: 1px solid rgba(95, 133, 166, 0.42);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(6, 15, 23, 0.42);
+  display: grid;
+  gap: 8px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.settings-row input,
+.settings-row select,
+.settings-row button {
+  background: #0c1926;
+  border: 1px solid #31536f;
+  color: #d2e5f9;
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+
+.settings-row button {
+  cursor: pointer;
+}
+
 @media (max-width: 1050px) {
   .game-shell {
     width: 100%;

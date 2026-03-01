@@ -2,6 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const statusEl = document.getElementById('status');
 const scoreboardEl = document.getElementById('scoreboard');
+const settingsEl = document.getElementById('settings');
 
 const TILE = 64;
 const PLAYER_RADIUS = 18;
@@ -79,9 +80,9 @@ const maps = [
     ],
     enemies: [
       { x: 7, y: 4, hp: 55 },
-      { x: 11, y: 12, hp: 65 },
+      { x: 11, y: 12, hp: 65, type: 'flanker' },
       { x: 19, y: 10, hp: 65 },
-      { x: 17, y: 2, hp: 50 },
+      { x: 17, y: 2, hp: 50, type: 'shield' },
       { x: 20, y: 8, hp: 45, type: 'dog' }
     ],
     pickups: [
@@ -103,9 +104,9 @@ const maps = [
       [5, 12, 13, 1], [15, 15, 10, 1]
     ],
     enemies: [
-      { x: 7, y: 14, hp: 70 },
+      { x: 7, y: 14, hp: 70, type: 'shield' },
       { x: 11, y: 3, hp: 70 },
-      { x: 17, y: 11, hp: 80 },
+      { x: 17, y: 11, hp: 80, type: 'flanker' },
       { x: 22, y: 5, hp: 80 },
       { x: 24, y: 14, hp: 90 },
       { x: 13, y: 15, hp: 55, type: 'dog' },
@@ -132,9 +133,9 @@ const maps = [
     ],
     enemies: [
       { x: 5, y: 16, hp: 85 },
-      { x: 9, y: 6, hp: 90 },
+      { x: 9, y: 6, hp: 90, type: 'shield' },
       { x: 14, y: 11, hp: 95 },
-      { x: 18, y: 5, hp: 90 },
+      { x: 18, y: 5, hp: 90, type: 'flanker' },
       { x: 22, y: 14, hp: 100 },
       { x: 25, y: 10, hp: 105 },
       { x: 12, y: 15, hp: 70, type: 'dog' },
@@ -153,12 +154,30 @@ const maps = [
 
 const game = {
   running: true,
+  paused: false,
   lastTime: performance.now(),
   wins: 0,
   losses: 0,
   mapIndex: 0,
   killCount: 0,
   message: 'Clear hostiles and reach the uplink.',
+  objectiveMode: 'purge',
+  keybinds: {
+    reload: 'r',
+    pause: 'p',
+    objectiveToggle: 'g',
+    weapon1: WEAPONS.blaster.slot,
+    weapon2: WEAPONS.shotgun.slot,
+    weapon3: WEAPONS.sniper.slot,
+    weapon4: WEAPONS.knife.slot
+  },
+  difficulty: {
+    hpScale: 1,
+    speedScale: 1,
+    enemyDamageScale: 1,
+    fireRateScale: 1,
+    label: 'Normal'
+  },
   player: {
     x: 0,
     y: 0,
@@ -192,6 +211,30 @@ const game = {
   navGridCache: new Map()
 };
 
+function normalizeKey(value, fallback) {
+  if (!value) return fallback;
+  const trimmed = String(value).trim().toLowerCase();
+  if (!trimmed) return fallback;
+  return trimmed === ' ' ? 'space' : trimmed;
+}
+
+function difficultyProfile() {
+  const mapScale = game.mapIndex * 0.12;
+  const winScale = game.wins * 0.08;
+  const combined = mapScale + winScale;
+  const hpScale = 1 + combined;
+  const speedScale = 1 + game.mapIndex * 0.05 + game.wins * 0.03;
+  const enemyDamageScale = 1 + game.mapIndex * 0.06 + game.wins * 0.04;
+  const fireRateScale = 1 + game.mapIndex * 0.08 + game.wins * 0.05;
+  const threatScore = hpScale + speedScale + enemyDamageScale + fireRateScale;
+  let label = 'Normal';
+  if (threatScore > 5.8) label = 'Lethal';
+  else if (threatScore > 5.1) label = 'Hard';
+  else if (threatScore > 4.5) label = 'Elevated';
+
+  return { hpScale, speedScale, enemyDamageScale, fireRateScale, label };
+}
+
 
 function currentWeapon() {
   return WEAPONS[game.player.activeWeapon];
@@ -212,6 +255,7 @@ function startMap(index, keepPlayerState = true) {
   const map = maps[index];
   game.activeMap = map;
   game.mapIndex = index;
+  game.difficulty = difficultyProfile();
   game.navGridCache.clear();
 
   const prev = game.player;
@@ -250,7 +294,10 @@ function startMap(index, keepPlayerState = true) {
 
   game.enemies = map.enemies.map((e, i) => {
     const type = e.type || 'humanoid';
-    const radius = type === 'dog' ? 14 : 16;
+    const radius = type === 'dog' ? 14 : type === 'shield' ? 18 : 16;
+    const hpScaleByType = type === 'shield' ? 1.28 : type === 'flanker' ? 0.88 : 1;
+    const scaledHp = Math.round(e.hp * game.difficulty.hpScale * hpScaleByType);
+    const baseSpeed = type === 'dog' ? 210 + Math.random() * 25 : type === 'flanker' ? 175 + Math.random() * 24 : 120 + Math.random() * 20;
     const safeSpawn = findReachableOpenPoint(
       e.x * TILE,
       e.y * TILE,
@@ -264,9 +311,9 @@ function startMap(index, keepPlayerState = true) {
       type,
       x: safeSpawn.x,
       y: safeSpawn.y,
-      hp: e.hp,
-      maxHp: e.hp,
-      speed: type === 'dog' ? 210 + Math.random() * 25 : 120 + Math.random() * 20,
+      hp: scaledHp,
+      maxHp: scaledHp,
+      speed: baseSpeed * game.difficulty.speedScale,
       cooldown: Math.random() * 0.8,
       radius,
       walkCycle: Math.random() * Math.PI * 2,
@@ -276,6 +323,7 @@ function startMap(index, keepPlayerState = true) {
       seesPlayer: false,
       guardOrigin: { x: safeSpawn.x, y: safeSpawn.y },
       guardTarget: { x: safeSpawn.x, y: safeSpawn.y },
+      facingAngle: 0,
       path: [],
       pathTarget: { tx: Math.floor(safeSpawn.x / TILE), ty: Math.floor(safeSpawn.y / TILE) },
       pathRecalc: 0
@@ -299,11 +347,12 @@ function startMap(index, keepPlayerState = true) {
   game.bullets = [];
   game.enemyBullets = [];
   game.muzzleFlashes = [];
-  game.message = `Map loaded: ${map.name}`;
+  game.message = `Map loaded: ${map.name} · Threat ${game.difficulty.label}`;
 }
 
 function resetRun(lostRound = false) {
   if (lostRound) game.losses += 1;
+  game.paused = false;
   game.killCount = 0;
   game.player.hp = game.player.maxHp;
   game.player.armor = 40;
@@ -710,7 +759,7 @@ function shootEnemyBullet(enemy, dir) {
     y: enemy.y,
     vx: dir.x * 380,
     vy: dir.y * 380,
-    damage: 10,
+    damage: (enemy.type === 'shield' ? 12 : 10) * game.difficulty.enemyDamageScale,
     life: 2
   });
 
@@ -720,6 +769,19 @@ function shootEnemyBullet(enemy, dir) {
     Math.atan2(dir.y, dir.x),
     '#ffbe8b'
   );
+}
+
+function computePlayerBulletDamage(enemy, bullet) {
+  let damage = bullet.damage;
+  if (enemy.type === 'shield') {
+    const incoming = normalize(bullet.vx, bullet.vy);
+    const facing = { x: Math.cos(enemy.facingAngle), y: Math.sin(enemy.facingAngle) };
+    const frontDot = incoming.x * facing.x + incoming.y * facing.y;
+    if (frontDot > 0.58) {
+      damage *= 0.35;
+    }
+  }
+  return damage;
 }
 
 function reloadWeapon() {
@@ -737,7 +799,7 @@ function reloadWeapon() {
 function update(dt) {
   const p = game.player;
 
-  if (!game.running) return;
+  if (!game.running || game.paused) return;
 
   p.fireCooldown = Math.max(0, p.fireCooldown - dt);
   p.reloading = Math.max(0, p.reloading - dt);
@@ -792,7 +854,7 @@ function update(dt) {
       if (enemy.hp <= 0 || bullet.hitTargets.has(enemy.id)) continue;
       const dist = Math.hypot(enemy.x - bullet.x, enemy.y - bullet.y);
       if (dist < enemy.radius + 4) {
-        enemy.hp -= bullet.damage;
+        enemy.hp -= computePlayerBulletDamage(enemy, bullet);
         bullet.hitTargets.add(enemy.id);
         bullet.pierceLeft -= 1;
         if (enemy.hp <= 0) {
@@ -814,11 +876,18 @@ function update(dt) {
 
     const toPlayer = normalize(p.x - enemy.x, p.y - enemy.y);
     const distance = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+    enemy.facingAngle = Math.atan2(toPlayer.y, toPlayer.x);
 
     if (enemy.alerted) {
       const chaseBuffer = enemy.type === 'dog' ? 34 : 140;
       if (distance > chaseBuffer) {
-        moveEnemyToward(enemy, p.x, p.y, dt);
+        if (enemy.type === 'flanker' && distance < 520) {
+          const flankDir = normalize(-toPlayer.y, toPlayer.x);
+          const flankDistance = 110 + Math.sin(performance.now() * 0.003 + enemy.walkCycle) * 35;
+          moveEnemyToward(enemy, p.x + flankDir.x * flankDistance, p.y + flankDir.y * flankDistance, dt);
+        } else {
+          moveEnemyToward(enemy, p.x, p.y, dt);
+        }
       } else {
         enemy.moving = false;
       }
@@ -835,9 +904,9 @@ function update(dt) {
     if (enemy.type === 'dog') {
       const meleeRange = TILE + enemy.radius;
       if (distance < meleeRange && enemy.cooldown <= 0 && p.invulnerable <= 0) {
-        applyDamage(18);
+        applyDamage(18 * game.difficulty.enemyDamageScale);
         p.invulnerable = 0.5;
-        enemy.cooldown = 0.85;
+        enemy.cooldown = 0.85 / game.difficulty.fireRateScale;
         game.message = 'Dog rushed you!';
       }
       continue;
@@ -845,11 +914,11 @@ function update(dt) {
 
     if (enemy.alerted && distance < 620 && enemy.cooldown <= 0 && enemy.seesPlayer) {
       shootEnemyBullet(enemy, toPlayer);
-      enemy.cooldown = 1.2 + Math.random() * 0.8;
+      enemy.cooldown = (1.2 + Math.random() * 0.8) / game.difficulty.fireRateScale;
     }
 
     if (distance < PLAYER_RADIUS + enemy.radius && p.invulnerable <= 0) {
-      applyDamage(12);
+      applyDamage(12 * game.difficulty.enemyDamageScale);
       p.invulnerable = 0.55;
       game.message = 'Close contact!';
     }
@@ -912,6 +981,11 @@ function update(dt) {
   const atExit = Math.hypot(p.x - exitWorld.x, p.y - exitWorld.y) < 42;
 
   if (atExit) {
+    if (game.objectiveMode === 'purge' && living > 0) {
+      game.message = `Exit locked: ${living} hostiles remain.`;
+      updatePanel(living);
+      return;
+    }
     if (game.mapIndex === maps.length - 1) {
       game.wins += 1;
       game.message = 'Mission complete. New run started.';
@@ -1136,6 +1210,13 @@ function draw() {
     ctx.fillRect(s.x - 18, s.y - 28, 36, 5);
     ctx.fillStyle = '#86ff95';
     ctx.fillRect(s.x - 18, s.y - 28, 36 * hpRatio, 5);
+
+    if (enemy.type === 'shield' || enemy.type === 'flanker') {
+      ctx.fillStyle = enemy.type === 'shield' ? '#91d9ff' : '#ff98a2';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(enemy.type === 'shield' ? '🛡' : '⚡', s.x, s.y - 34);
+    }
   }
 
   for (const bullet of game.bullets) {
@@ -1198,6 +1279,18 @@ function draw() {
   ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
   ctx.font = '13px sans-serif';
   ctx.fillText('Reach STAIRS to ascend', 26, 58);
+
+  if (game.paused) {
+    ctx.fillStyle = 'rgba(6, 12, 18, 0.58)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#e6f2ff';
+    ctx.font = '700 38px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 12);
+    ctx.font = '500 16px Inter, sans-serif';
+    ctx.fillStyle = '#b8cde2';
+    ctx.fillText('Press P or use Settings to resume.', canvas.width / 2, canvas.height / 2 + 20);
+  }
 }
 
 function drawPlayer(player) {
@@ -1361,6 +1454,7 @@ function updatePanel(livingEnemies) {
   const ammoRatio = activeAmmo ? Math.max(0, Math.min(1, activeAmmo.mag / magSize)) : 1;
   const reloadRatio = p.reloading > 0 ? 1 - p.reloading / (activeWeapon.reloadTime || 1) : 0;
   const statusMsg = p.reloading > 0 ? `Reloading... ${Math.round(reloadRatio * 100)}%` : game.message;
+  const objectiveText = game.objectiveMode === 'purge' ? 'Clear all hostiles before exit' : 'Reach exit any time';
 
   statusEl.innerHTML = `
     <div class="hud-section">
@@ -1373,6 +1467,14 @@ function updatePanel(livingEnemies) {
         <div class="meta-item">
           <span class="meta-label">Level</span>
           <span class="meta-value value-accent">${game.mapIndex + 1}/${maps.length}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Objective</span>
+          <span class="meta-value value-accent">${game.objectiveMode === 'purge' ? 'Purge' : 'Speedrun'}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Threat</span>
+          <span class="meta-value ${game.difficulty.label === 'Lethal' ? 'value-danger' : 'value-accent'}">${game.difficulty.label}</span>
         </div>
       </div>
     </div>
@@ -1398,6 +1500,7 @@ function updatePanel(livingEnemies) {
     </div>
 
     <p class="status-text"><strong>Status:</strong> ${statusMsg}</p>
+    <p class="status-text"><strong>Objective:</strong> ${objectiveText} (toggle: ${game.keybinds.objectiveToggle.toUpperCase()})</p>
     <p class="status-text"><strong>Pickups:</strong> yellow rounds = Blaster · red shells = Shotgun · crimson dart = Sniper · med kit = Health · 🛡 = Armor</p>
   `;
 
@@ -1422,8 +1525,87 @@ function updatePanel(livingEnemies) {
         <span class="meta-label">Kills this run</span>
         <span class="meta-value">${game.killCount}</span>
       </div>
+      <div class="kpi">
+        <span class="meta-label">Keybinds</span>
+        <span class="meta-value">Reload ${game.keybinds.reload.toUpperCase()} · Pause ${game.keybinds.pause.toUpperCase()}</span>
+      </div>
     </div>
   `;
+}
+
+function syncSettingsInputs() {
+  const setValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  };
+
+  const pauseBtn = document.getElementById('pauseToggleBtn');
+  if (pauseBtn) pauseBtn.textContent = game.paused ? 'Resume' : 'Pause';
+
+  setValue('objectiveModeSelect', game.objectiveMode);
+  setValue('reloadBindInput', game.keybinds.reload);
+  setValue('pauseBindInput', game.keybinds.pause);
+  setValue('objectiveBindInput', game.keybinds.objectiveToggle);
+}
+
+function initSettingsUI() {
+  settingsEl.innerHTML = `
+    <p class="hud-title">Settings</p>
+    <div class="settings-card">
+      <div class="settings-row">
+        <span>Run state</span>
+        <button id="pauseToggleBtn" type="button">Pause</button>
+      </div>
+      <div class="settings-row">
+        <span>Objective Mode</span>
+        <select id="objectiveModeSelect">
+          <option value="purge">Purge (clear all)</option>
+          <option value="speedrun">Speedrun (free exit)</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span>Reload key</span>
+        <input id="reloadBindInput" maxlength="1" />
+      </div>
+      <div class="settings-row">
+        <span>Pause key</span>
+        <input id="pauseBindInput" maxlength="1" />
+      </div>
+      <div class="settings-row">
+        <span>Objective toggle key</span>
+        <input id="objectiveBindInput" maxlength="1" />
+      </div>
+    </div>
+  `;
+
+  document.getElementById('pauseToggleBtn')?.addEventListener('click', () => {
+    game.paused = !game.paused;
+    game.message = game.paused ? 'Paused.' : 'Resumed.';
+    syncSettingsInputs();
+  });
+
+  document.getElementById('objectiveModeSelect')?.addEventListener('change', (e) => {
+    game.objectiveMode = e.target.value;
+    game.message = `Objective mode: ${game.objectiveMode === 'purge' ? 'Purge' : 'Speedrun'}`;
+    syncSettingsInputs();
+  });
+
+  document.getElementById('reloadBindInput')?.addEventListener('change', (e) => {
+    game.keybinds.reload = normalizeKey(e.target.value, game.keybinds.reload);
+    syncSettingsInputs();
+  });
+
+  document.getElementById('pauseBindInput')?.addEventListener('change', (e) => {
+    game.keybinds.pause = normalizeKey(e.target.value, game.keybinds.pause);
+    syncSettingsInputs();
+  });
+
+  document.getElementById('objectiveBindInput')?.addEventListener('change', (e) => {
+    game.keybinds.objectiveToggle = normalizeKey(e.target.value, game.keybinds.objectiveToggle);
+    syncSettingsInputs();
+  });
+
+  syncSettingsInputs();
 }
 
 function resizeCanvasToViewport() {
@@ -1438,7 +1620,7 @@ function resizeCanvasToViewport() {
 }
 
 function gameLoop(timestamp) {
-  const dt = Math.min((timestamp - game.lastTime) / 1000, 0.033);
+  const dt = game.paused ? 0 : Math.min((timestamp - game.lastTime) / 1000, 0.033);
   game.lastTime = timestamp;
 
   update(dt);
@@ -1451,20 +1633,32 @@ window.addEventListener('keydown', (e) => {
   const key = e.key.toLowerCase();
   game.keys.add(key);
 
-  if (key === 'r') reloadWeapon();
-  if (key === WEAPONS.blaster.slot) {
+  if (key === game.keybinds.pause) {
+    game.paused = !game.paused;
+    game.message = game.paused ? 'Paused.' : 'Resumed.';
+    syncSettingsInputs();
+  }
+
+  if (key === game.keybinds.objectiveToggle) {
+    game.objectiveMode = game.objectiveMode === 'purge' ? 'speedrun' : 'purge';
+    game.message = `Objective mode: ${game.objectiveMode === 'purge' ? 'Purge' : 'Speedrun'}`;
+    syncSettingsInputs();
+  }
+
+  if (key === game.keybinds.reload) reloadWeapon();
+  if (key === game.keybinds.weapon1) {
     game.player.activeWeapon = 'blaster';
     game.message = 'Switched to blaster.';
   }
-  if (key === WEAPONS.shotgun.slot) {
+  if (key === game.keybinds.weapon2) {
     game.player.activeWeapon = 'shotgun';
     game.message = 'Switched to shotgun.';
   }
-  if (key === WEAPONS.sniper.slot) {
+  if (key === game.keybinds.weapon3) {
     game.player.activeWeapon = 'sniper';
     game.message = 'Switched to sniper.';
   }
-  if (key === WEAPONS.knife.slot) {
+  if (key === game.keybinds.weapon4) {
     game.player.activeWeapon = 'knife';
     game.message = 'Switched to knife.';
   }
@@ -1492,5 +1686,6 @@ window.addEventListener('resize', resizeCanvasToViewport);
 
 resizeCanvasToViewport();
 startMap(0, false);
+initSettingsUI();
 updatePanel(game.enemies.length);
 requestAnimationFrame(gameLoop);

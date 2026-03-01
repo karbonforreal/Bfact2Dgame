@@ -143,10 +143,12 @@ const game = {
     reloading: 0,
     invulnerable: 0,
     walkCycle: 0,
-    moving: false
+    moving: false,
+    knifeAnim: 0
   },
   bullets: [],
   enemyBullets: [],
+  muzzleFlashes: [],
   enemies: [],
   pickups: [],
   keys: new Set(),
@@ -187,7 +189,8 @@ function startMap(index, keepPlayerState = true) {
     reloading: 0,
     invulnerable: 0.4,
     walkCycle: prev.walkCycle || 0,
-    moving: false
+    moving: false,
+    knifeAnim: 0
   };
 
   game.enemies = map.enemies.map((e, i) => {
@@ -239,6 +242,7 @@ function startMap(index, keepPlayerState = true) {
 
   game.bullets = [];
   game.enemyBullets = [];
+  game.muzzleFlashes = [];
   game.message = `Map loaded: ${map.name}`;
 }
 
@@ -585,12 +589,25 @@ function performKnifeAttack() {
   }
 }
 
+function spawnMuzzleFlash(x, y, angle, color = '#a9f8ff') {
+  game.muzzleFlashes.push({
+    x,
+    y,
+    angle,
+    color,
+    life: 0.08,
+    maxLife: 0.08,
+    size: 10 + Math.random() * 5
+  });
+}
+
 function shootPlayerWeapon() {
   const p = game.player;
   if (p.fireCooldown > 0 || p.reloading > 0) return;
 
   if (p.activeWeapon === 'knife') {
     p.fireCooldown = WEAPONS.knife.cooldown;
+    p.knifeAnim = 0.16;
     performKnifeAttack();
     return;
   }
@@ -613,6 +630,13 @@ function shootPlayerWeapon() {
     damage: blaster.damage,
     life: 1.05
   });
+
+  spawnMuzzleFlash(
+    p.x + Math.cos(p.angle) * 26,
+    p.y + Math.sin(p.angle) * 26,
+    p.angle,
+    '#9bf7ff'
+  );
 }
 
 function shootEnemyBullet(enemy, dir) {
@@ -624,6 +648,13 @@ function shootEnemyBullet(enemy, dir) {
     damage: 10,
     life: 2
   });
+
+  spawnMuzzleFlash(
+    enemy.x + dir.x * 18,
+    enemy.y + dir.y * 18,
+    Math.atan2(dir.y, dir.x),
+    '#ffbe8b'
+  );
 }
 
 function reloadWeapon() {
@@ -641,6 +672,7 @@ function update(dt) {
   p.fireCooldown = Math.max(0, p.fireCooldown - dt);
   p.reloading = Math.max(0, p.reloading - dt);
   p.invulnerable = Math.max(0, p.invulnerable - dt);
+  p.knifeAnim = Math.max(0, p.knifeAnim - dt);
 
   if (p.reloading === 0 && p.ammoInMag < p.magazineSize && game.message === 'Reloading...') {
     const needed = p.magazineSize - p.ammoInMag;
@@ -781,6 +813,10 @@ function update(dt) {
 
   game.bullets = game.bullets.filter((b) => b.life > 0);
   game.enemyBullets = game.enemyBullets.filter((b) => b.life > 0);
+  game.muzzleFlashes = game.muzzleFlashes.filter((flash) => {
+    flash.life -= dt;
+    return flash.life > 0;
+  });
 
   if (p.hp <= 0) {
     game.message = 'You were eliminated. Restarting run...';
@@ -907,6 +943,29 @@ function draw() {
     ctx.fill();
   }
 
+  for (const flash of game.muzzleFlashes) {
+    const s = worldToScreen(flash.x, flash.y, camera);
+    const alpha = flash.life / flash.maxLife;
+    const flashSize = flash.size * (0.5 + alpha * 0.7);
+
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(flash.angle);
+    ctx.fillStyle = `rgba(255, 245, 210, ${Math.min(0.95, alpha)})`;
+    ctx.beginPath();
+    ctx.moveTo(flashSize, 0);
+    ctx.lineTo(-flashSize * 0.35, flashSize * 0.5);
+    ctx.lineTo(-flashSize * 0.35, -flashSize * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = flash.color;
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.beginPath();
+    ctx.arc(0, 0, flashSize * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   drawPlayer(p);
 
   ctx.fillStyle = 'rgba(15, 23, 35, 0.7)';
@@ -926,8 +985,10 @@ function drawPlayer(player) {
   const y = canvas.height / 2;
   const bob = player.moving ? Math.sin(player.walkCycle * 2) * 1.5 : 0;
   const step = player.moving ? Math.sin(player.walkCycle) * 5 : 0;
-  const facing = Math.cos(player.angle) >= 0 ? 1 : -1;
   const shirtColor = player.invulnerable > 0 ? '#f9d97a' : '#6ec2ff';
+  const knifeProgress = player.knifeAnim > 0 ? 1 - player.knifeAnim / 0.16 : 0;
+  const knifeStabOffset = player.activeWeapon === 'knife' ? Math.sin(knifeProgress * Math.PI) * 14 : 0;
+  const torsoTurn = player.angle * 0.32;
 
   ctx.save();
   ctx.translate(x, y + bob);
@@ -946,6 +1007,9 @@ function drawPlayer(player) {
   ctx.fillStyle = shirtColor;
   ctx.fillRect(-10, -3, 20, 14);
 
+  ctx.save();
+  ctx.rotate(torsoTurn);
+
   // Arms
   ctx.fillStyle = '#d99c72';
   ctx.fillRect(-13, 0, 3, 10);
@@ -958,25 +1022,28 @@ function drawPlayer(player) {
   ctx.fillRect(-7, -15, 14, 4);
 
   // Eyes (single-pixel retro look)
+  const eyeOffsetX = Math.cos(player.angle) * 1.5;
+  const eyeOffsetY = Math.sin(player.angle) * 1.5;
   ctx.fillStyle = '#1d2730';
-  ctx.fillRect(-4, -10, 2, 2);
-  ctx.fillRect(2, -10, 2, 2);
+  ctx.fillRect(-4 + eyeOffsetX, -10 + eyeOffsetY, 2, 2);
+  ctx.fillRect(2 + eyeOffsetX, -10 + eyeOffsetY, 2, 2);
 
-  // Weapon + facing direction
+  // Weapon aiming direction (full 360)
   ctx.save();
-  ctx.scale(facing, 1);
+  ctx.rotate(player.angle);
   if (player.activeWeapon === 'knife') {
     ctx.fillStyle = '#303b45';
-    ctx.fillRect(8, 3, 4, 3);
+    ctx.fillRect(8 + knifeStabOffset * 0.35, -2, 4, 4);
     ctx.fillStyle = '#d9e7f2';
-    ctx.fillRect(12, 2, 10, 2);
-    ctx.fillRect(12, 4, 10, 1);
+    ctx.fillRect(12 + knifeStabOffset, -2, 12, 2);
+    ctx.fillRect(12 + knifeStabOffset, 0, 12, 1);
   } else {
     ctx.fillStyle = '#23384d';
-    ctx.fillRect(8, 2, 12, 4);
+    ctx.fillRect(8, -2, 12, 4);
     ctx.fillStyle = '#7ce6ff';
-    ctx.fillRect(18, 3, 4, 2);
+    ctx.fillRect(18, -1, 4, 2);
   }
+  ctx.restore();
   ctx.restore();
 
   ctx.restore();

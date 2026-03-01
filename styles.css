@@ -23,6 +23,17 @@ body {
   max-width: 1320px;
   margin: 0 auto;
   padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-areas:
+    "header header"
+    "canvas panel";
+  gap: 10px;
+  align-items: start;
+}
+
+.hud-bar {
+  grid-area: header;
 }
 
 .hud-bar h1 {
@@ -37,6 +48,7 @@ body {
 }
 
 #gameCanvas {
+  grid-area: canvas;
   width: 100%;
   border: 2px solid #2f516f;
   border-radius: 10px;
@@ -46,19 +58,41 @@ body {
 }
 
 .panel {
-  margin-top: 10px;
+  grid-area: panel;
   background: rgba(18, 31, 45, 0.92);
   border: 1px solid #2d4d69;
   border-radius: 10px;
-  padding: 10px 12px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 100%;
 }
 
 .panel p {
-  margin: 4px 0;
+  margin: 3px 0;
+  font-size: 0.92rem;
+}
+
+#status,
+#scoreboard {
+  padding: 2px;
+}
+
+@media (max-width: 1050px) {
+  .game-shell {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "canvas"
+      "panel";
+  }
+
+  .panel {
+    min-height: 0;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+  }
 }
 
 .value-good {

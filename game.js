@@ -929,6 +929,43 @@ function drawExitStairs(x, y) {
   ctx.restore();
 }
 
+function drawAmmoPickupIcon(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  const bulletOffsets = [-5, 0, 5];
+  for (const offset of bulletOffsets) {
+    ctx.fillStyle = '#ffe2a4';
+    ctx.fillRect(offset - 1.8, -4.5, 3.6, 7);
+    ctx.fillStyle = '#c8913a';
+    ctx.beginPath();
+    ctx.moveTo(offset - 1.8, -4.5);
+    ctx.lineTo(offset + 1.8, -4.5);
+    ctx.lineTo(offset, -7.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawHealthPickupIcon(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-7, -7, 14, 14);
+  ctx.strokeStyle = '#d3dbe5';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-7, -7, 14, 14);
+
+  ctx.fillStyle = '#d82a3a';
+  ctx.fillRect(-2, -5.5, 4, 11);
+  ctx.fillRect(-5.5, -2, 11, 4);
+
+  ctx.restore();
+}
+
 function draw() {
   const p = game.player;
   const camera = { x: p.x, y: p.y };
@@ -952,18 +989,22 @@ function draw() {
     if (pickup.type === 'health') ctx.fillStyle = '#7bff9f';
     if (pickup.type === 'armor') ctx.fillStyle = '#7bf9ff';
     ctx.fillRect(s.x - 10, s.y - 10, 20, 20);
-    ctx.fillStyle = '#1d2b38';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    const marker = pickup.type === 'ammo' ? 'A' : pickup.type === 'health' ? '+' : '🛡';
-    ctx.fillText(marker, s.x, s.y + 4);
+
+    if (pickup.type === 'ammo') drawAmmoPickupIcon(s.x, s.y + 1);
+    if (pickup.type === 'health') drawHealthPickupIcon(s.x, s.y);
+    if (pickup.type === 'armor') {
+      ctx.fillStyle = '#1d2b38';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🛡', s.x, s.y + 4);
+    }
   }
 
   for (const enemy of game.enemies) {
     if (enemy.hp <= 0) continue;
     const s = worldToScreen(enemy.x, enemy.y, camera);
 
-    if (enemy.seesPlayer) {
+    if (enemy.alerted) {
       ctx.strokeStyle = 'rgba(255, 82, 82, 0.95)';
       ctx.lineWidth = 2;
       ctx.shadowColor = 'rgba(255, 60, 60, 0.95)';
@@ -1224,7 +1265,7 @@ function updatePanel(livingEnemies) {
     </div>
 
     <p class="status-text"><strong>Status:</strong> ${statusMsg}</p>
-    <p class="status-text"><strong>Pickups:</strong> A = Ammo · + = Health · 🛡 = Armor</p>
+    <p class="status-text"><strong>Pickups:</strong> bullets = Ammo · med kit = Health · 🛡 = Armor</p>
   `;
 
   scoreboardEl.innerHTML = `

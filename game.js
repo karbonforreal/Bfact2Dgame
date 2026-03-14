@@ -69,6 +69,51 @@ const WEAPONS = {
   }
 };
 
+const LEVEL_THEMES = [
+  {
+    floorBase: ['#263541', '#1e2c36'],
+    floorGradient: ['rgba(127, 169, 199, 0.2)', 'rgba(64, 84, 102, 0.17)', 'rgba(25, 35, 47, 0.3)'],
+    lineColor: 'rgba(126, 196, 235, 0.11)',
+    panelColor: 'rgba(206, 222, 232, 0.12)',
+    boltColor: 'rgba(129, 153, 174, 0.24)',
+    borderColor: 'rgba(144, 172, 194, 0.25)',
+    wallGradient: ['#52616f', '#374452', '#242f39'],
+    wallGloss: ['rgba(214, 226, 238, 0.16)', 'rgba(127, 162, 191, 0.08)', 'rgba(19, 27, 37, 0.24)'],
+    wallStripe: 'rgba(170, 191, 210, 0.24)',
+    wallAccent: 'rgba(111, 184, 233, 0.14)',
+    wallBolt: 'rgba(185, 206, 223, 0.2)',
+    wallBorder: '#95aec2'
+  },
+  {
+    floorBase: ['#2f2a25', '#231f1a'],
+    floorGradient: ['rgba(191, 154, 104, 0.2)', 'rgba(112, 85, 55, 0.17)', 'rgba(45, 32, 22, 0.3)'],
+    lineColor: 'rgba(238, 185, 118, 0.11)',
+    panelColor: 'rgba(229, 210, 184, 0.12)',
+    boltColor: 'rgba(180, 145, 109, 0.23)',
+    borderColor: 'rgba(188, 153, 113, 0.25)',
+    wallGradient: ['#74624f', '#504135', '#342a22'],
+    wallGloss: ['rgba(232, 215, 193, 0.15)', 'rgba(188, 145, 97, 0.09)', 'rgba(47, 35, 24, 0.24)'],
+    wallStripe: 'rgba(218, 183, 138, 0.22)',
+    wallAccent: 'rgba(239, 173, 95, 0.14)',
+    wallBolt: 'rgba(226, 200, 168, 0.2)',
+    wallBorder: '#be976c'
+  },
+  {
+    floorBase: ['#2a252f', '#211c26'],
+    floorGradient: ['rgba(169, 124, 199, 0.2)', 'rgba(94, 71, 114, 0.18)', 'rgba(37, 29, 45, 0.3)'],
+    lineColor: 'rgba(208, 147, 241, 0.12)',
+    panelColor: 'rgba(221, 197, 232, 0.13)',
+    boltColor: 'rgba(165, 130, 186, 0.24)',
+    borderColor: 'rgba(168, 136, 191, 0.28)',
+    wallGradient: ['#665379', '#463755', '#2e2338'],
+    wallGloss: ['rgba(225, 208, 236, 0.15)', 'rgba(169, 123, 199, 0.09)', 'rgba(38, 28, 48, 0.26)'],
+    wallStripe: 'rgba(205, 177, 222, 0.23)',
+    wallAccent: 'rgba(194, 130, 232, 0.14)',
+    wallBolt: 'rgba(211, 186, 227, 0.2)',
+    wallBorder: '#ad89c9'
+  }
+];
+
 const maps = [
   {
     name: 'Docking Ring',
@@ -1000,40 +1045,49 @@ function update(dt) {
 }
 
 function drawSpaceParallax(camera) {
-  const t = performance.now() * 0.0001;
+  const t = performance.now() * 0.00014;
+  const fieldWidth = canvas.width + 320;
+  const fieldHeight = canvas.height + 320;
   const layers = [
-    { speed: 0.08, size: 1.4, density: 150, color: 'rgba(196, 226, 255, 0.42)' },
-    { speed: 0.15, size: 1.9, density: 110, color: 'rgba(154, 201, 255, 0.35)' },
-    { speed: 0.24, size: 2.4, density: 80, color: 'rgba(131, 176, 255, 0.3)' }
+    { speed: 0.025, sizeMin: 0.55, sizeMax: 1.1, density: 460, alphaMin: 0.12, alphaMax: 0.34, driftX: 22, driftY: 12, seed: 1.17 },
+    { speed: 0.055, sizeMin: 0.8, sizeMax: 1.45, density: 300, alphaMin: 0.2, alphaMax: 0.5, driftX: 37, driftY: 18, seed: 2.73 },
+    { speed: 0.1, sizeMin: 1.1, sizeMax: 1.95, density: 180, alphaMin: 0.28, alphaMax: 0.7, driftX: 49, driftY: 25, seed: 3.91 },
+    { speed: 0.165, sizeMin: 1.7, sizeMax: 2.7, density: 80, alphaMin: 0.42, alphaMax: 0.9, driftX: 66, driftY: 34, seed: 5.21 }
   ];
 
-  const bgGradient = ctx.createRadialGradient(canvas.width * 0.65, canvas.height * 0.4, 90, canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.8);
-  bgGradient.addColorStop(0, '#111b2f');
-  bgGradient.addColorStop(0.5, '#090f1d');
-  bgGradient.addColorStop(1, '#04070e');
-  ctx.fillStyle = bgGradient;
+  const pseudoRandom = (value, seed) => {
+    const n = Math.sin(value * 127.1 + seed * 311.7) * 43758.5453;
+    return n - Math.floor(n);
+  };
+
+  ctx.fillStyle = '#010101';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = 'rgba(92, 128, 220, 0.12)';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width * 0.78, canvas.height * 0.22, 180, 90, -0.45, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(159, 93, 201, 0.08)';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width * 0.23, canvas.height * 0.8, 220, 110, 0.35, 0, Math.PI * 2);
-  ctx.fill();
-
   for (const layer of layers) {
-    ctx.fillStyle = layer.color;
     for (let i = 0; i < layer.density; i += 1) {
-      const seedX = (i * 97.13) % (canvas.width + 120);
-      const seedY = (i * 57.77) % (canvas.height + 120);
-      const x = (seedX - camera.x * layer.speed + t * (35 + layer.speed * 120)) % (canvas.width + 120);
-      const y = (seedY - camera.y * layer.speed + t * (15 + layer.speed * 70)) % (canvas.height + 120);
-      ctx.fillRect((x + canvas.width + 120) % (canvas.width + 120) - 60, (y + canvas.height + 120) % (canvas.height + 120) - 60, layer.size, layer.size);
+      const hashX = pseudoRandom(i + 1.35, layer.seed);
+      const hashY = pseudoRandom(i * 1.91 + 7.2, layer.seed + 0.63);
+      const hashSize = pseudoRandom(i * 2.37 + 3.5, layer.seed + 1.11);
+      const hashAlpha = pseudoRandom(i * 1.19 + 9.7, layer.seed + 2.07);
+      const x = (hashX * fieldWidth - camera.x * layer.speed + t * layer.driftX) % fieldWidth;
+      const y = (hashY * fieldHeight - camera.y * layer.speed + t * layer.driftY) % fieldHeight;
+      const drawX = (x + fieldWidth) % fieldWidth - 160;
+      const drawY = (y + fieldHeight) % fieldHeight - 160;
+      const size = layer.sizeMin + hashSize * (layer.sizeMax - layer.sizeMin);
+      const alpha = layer.alphaMin + hashAlpha * (layer.alphaMax - layer.alphaMin);
+
+      const warmChance = pseudoRandom(i * 0.73 + 4.1, layer.seed + 3.6);
+      if (warmChance > 0.985) {
+        ctx.fillStyle = `rgba(255, 232, 205, ${Math.min(1, alpha + 0.12).toFixed(3)})`;
+      } else {
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
+      }
+
+      ctx.fillRect(drawX, drawY, size, size);
     }
   }
 }
+
 
 function drawGrid(camera) {
   const mapWidth = game.activeMap.width;
@@ -1043,6 +1097,8 @@ function drawGrid(camera) {
   const startY = Math.max(0, Math.floor((camera.y - canvas.height / 2) / TILE) - 1);
   const endY = Math.min(mapHeight - 1, Math.ceil((camera.y + canvas.height / 2) / TILE) + 1);
 
+  const theme = LEVEL_THEMES[game.mapIndex % LEVEL_THEMES.length];
+
   for (let gy = startY; gy <= endY; gy += 1) {
     for (let gx = startX; gx <= endX; gx += 1) {
       const tileWorldX = gx * TILE;
@@ -1050,27 +1106,27 @@ function drawGrid(camera) {
       const sx = tileWorldX - camera.x + canvas.width / 2;
       const sy = tileWorldY - camera.y + canvas.height / 2;
 
-      const baseShade = (gx + gy + game.mapIndex) % 2 === 0 ? '#24313f' : '#202b38';
+      const baseShade = (gx + gy + game.mapIndex) % 2 === 0 ? theme.floorBase[0] : theme.floorBase[1];
       ctx.fillStyle = baseShade;
       ctx.fillRect(sx, sy, TILE, TILE);
 
       const floorGrad = ctx.createLinearGradient(sx, sy, sx + TILE, sy + TILE);
-      floorGrad.addColorStop(0, 'rgba(132, 178, 209, 0.17)');
-      floorGrad.addColorStop(0.5, 'rgba(67, 84, 101, 0.16)');
-      floorGrad.addColorStop(1, 'rgba(26, 35, 46, 0.28)');
+      floorGrad.addColorStop(0, theme.floorGradient[0]);
+      floorGrad.addColorStop(0.5, theme.floorGradient[1]);
+      floorGrad.addColorStop(1, theme.floorGradient[2]);
       ctx.fillStyle = floorGrad;
       ctx.fillRect(sx, sy, TILE, TILE);
 
       const pulse = ((gx * 17 + gy * 11 + Math.floor(performance.now() * 0.004)) % 12) / 12;
-      ctx.fillStyle = `rgba(121, 188, 224, ${0.06 + pulse * 0.05})`;
+      ctx.fillStyle = theme.lineColor.replace('0.11', (0.06 + pulse * 0.05).toFixed(3)).replace('0.12', (0.06 + pulse * 0.05).toFixed(3));
       ctx.fillRect(sx + 6, sy + 6, TILE - 12, 1.7);
       ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.4);
 
-      ctx.fillStyle = 'rgba(205, 221, 232, 0.14)';
+      ctx.fillStyle = theme.panelColor;
       ctx.fillRect(sx + TILE * 0.28, sy + TILE * 0.18, TILE * 0.44, 2);
       ctx.fillRect(sx + TILE * 0.18, sy + TILE * 0.72, TILE * 0.64, 1.5);
 
-      ctx.fillStyle = 'rgba(120, 146, 171, 0.26)';
+      ctx.fillStyle = theme.boltColor;
       ctx.beginPath();
       ctx.arc(sx + 12, sy + 12, 2.1, 0, Math.PI * 2);
       ctx.arc(sx + TILE - 12, sy + 12, 2.1, 0, Math.PI * 2);
@@ -1078,40 +1134,40 @@ function drawGrid(camera) {
       ctx.arc(sx + TILE - 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(140, 170, 194, 0.26)';
+      ctx.strokeStyle = theme.borderColor;
       ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
     }
   }
 }
 
-function drawSciWall(x, y, w, h) {
+function drawSciWall(x, y, w, h, theme) {
   const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-  gradient.addColorStop(0, '#4d5966');
-  gradient.addColorStop(0.52, '#323d49');
-  gradient.addColorStop(1, '#202a34');
+  gradient.addColorStop(0, theme.wallGradient[0]);
+  gradient.addColorStop(0.52, theme.wallGradient[1]);
+  gradient.addColorStop(1, theme.wallGradient[2]);
   ctx.fillStyle = gradient;
   ctx.fillRect(x, y, w, h);
 
   const gloss = ctx.createLinearGradient(x, y, x, y + h);
-  gloss.addColorStop(0, 'rgba(211, 224, 238, 0.16)');
-  gloss.addColorStop(0.35, 'rgba(124, 157, 188, 0.08)');
-  gloss.addColorStop(1, 'rgba(17, 25, 34, 0.22)');
+  gloss.addColorStop(0, theme.wallGloss[0]);
+  gloss.addColorStop(0.35, theme.wallGloss[1]);
+  gloss.addColorStop(1, theme.wallGloss[2]);
   ctx.fillStyle = gloss;
   ctx.fillRect(x, y, w, h);
 
-  ctx.fillStyle = 'rgba(160, 185, 207, 0.23)';
+  ctx.fillStyle = theme.wallStripe;
   for (let px = x + 6; px < x + w - 6; px += 18) {
     ctx.fillRect(px, y + 5, 10, 2);
     ctx.fillRect(px, y + h - 7, 10, 1.6);
   }
 
-  ctx.fillStyle = 'rgba(105, 177, 228, 0.13)';
+  ctx.fillStyle = theme.wallAccent;
   for (let py = y + 8; py < y + h - 8; py += 20) {
     ctx.fillRect(x + 5, py, 2, 10);
     ctx.fillRect(x + w - 7, py, 2, 10);
   }
 
-  ctx.fillStyle = 'rgba(178, 201, 219, 0.2)';
+  ctx.fillStyle = theme.wallBolt;
   for (let py = y + 14; py < y + h - 12; py += 28) {
     ctx.beginPath();
     ctx.arc(x + 10, py, 2, 0, Math.PI * 2);
@@ -1119,7 +1175,7 @@ function drawSciWall(x, y, w, h) {
     ctx.fill();
   }
 
-  ctx.strokeStyle = '#91a8bb';
+  ctx.strokeStyle = theme.wallBorder;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
 }
@@ -1221,12 +1277,14 @@ function draw() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  const theme = LEVEL_THEMES[game.mapIndex % LEVEL_THEMES.length];
+
   drawSpaceParallax(camera);
   drawGrid(camera);
 
   for (const wall of mapRects()) {
     const s = worldToScreen(wall.x, wall.y, camera);
-    drawSciWall(s.x, s.y, wall.w, wall.h);
+    drawSciWall(s.x, s.y, wall.w, wall.h, theme);
   }
 
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);

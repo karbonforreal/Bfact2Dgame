@@ -3,6 +3,7 @@ const ctx = canvas.getContext('2d');
 const statusEl = document.getElementById('status');
 const scoreboardEl = document.getElementById('scoreboard');
 const settingsEl = document.getElementById('settings');
+const pauseOverlayEl = document.getElementById('pauseOverlay');
 
 const TILE = 64;
 const PLAYER_RADIUS = 18;
@@ -1295,15 +1296,8 @@ function draw() {
   ctx.fillText('Reach STAIRS to ascend', 26, 58);
 
   if (game.paused) {
-    ctx.fillStyle = 'rgba(6, 12, 18, 0.58)';
+    ctx.fillStyle = 'rgba(6, 12, 18, 0.5)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#e6f2ff';
-    ctx.font = '700 38px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 12);
-    ctx.font = '500 16px Inter, sans-serif';
-    ctx.fillStyle = '#b8cde2';
-    ctx.fillText('Press P or use Settings to resume.', canvas.width / 2, canvas.height / 2 + 20);
   }
 }
 
@@ -1313,6 +1307,7 @@ function drawPlayer(player) {
   const stride = player.moving ? Math.sin(player.walkCycle) : 0;
   const bob = player.moving ? Math.sin(player.walkCycle * 2) * 2.2 : 0;
   const armSwing = player.moving ? Math.sin(player.walkCycle + Math.PI / 2) * 0.4 : 0;
+  const recoil = Math.max(0, player.fireCooldown * 34);
   const shirtColor = player.invulnerable > 0 ? '#ffd66e' : '#73ccff';
   const knifeProgress = player.knifeAnim > 0 ? 1 - player.knifeAnim / 0.16 : 0;
   const knifeStabOffset = player.activeWeapon === 'knife' ? Math.sin(knifeProgress * Math.PI) * 14 : 0;
@@ -1377,26 +1372,29 @@ function drawPlayer(player) {
     ctx.fillRect(12 + knifeStabOffset, 0, 12, 1);
   } else if (player.activeWeapon === 'shotgun') {
     ctx.fillStyle = '#1f2e38';
-    ctx.fillRect(6, -3.2, 18, 6.4);
+    ctx.fillRect(6 - recoil, -3.2, 18, 6.4);
     ctx.fillStyle = '#7e522f';
-    ctx.fillRect(6, -2.2, 9, 4.6);
+    ctx.fillRect(6 - recoil, -2.2, 9, 4.6);
     ctx.fillStyle = '#ccd5de';
-    ctx.fillRect(22, -1.8, 5, 3.6);
+    ctx.fillRect(22 - recoil, -1.8, 5, 3.6);
   } else if (player.activeWeapon === 'sniper') {
     ctx.fillStyle = '#243648';
-    ctx.fillRect(6, -2.4, 25, 4.8);
+    ctx.fillRect(6 - recoil, -2.4, 25, 4.8);
     ctx.fillStyle = '#425a73';
-    ctx.fillRect(13, -6, 10, 3.4);
+    ctx.fillRect(13 - recoil, -6, 10, 3.4);
     ctx.fillStyle = '#121921';
-    ctx.fillRect(16, -8, 6, 2);
+    ctx.fillRect(16 - recoil, -8, 6, 2);
     ctx.fillStyle = '#ff6565';
-    ctx.fillRect(29, -1.2, 3, 2.4);
+    ctx.fillRect(29 - recoil, -1.2, 3, 2.4);
   } else {
     ctx.fillStyle = '#1f344a';
-    ctx.fillRect(8, -2.2, 13, 4.4);
+    ctx.fillRect(8 - recoil, -2.2, 13, 4.4);
     ctx.fillStyle = '#7ce6ff';
-    ctx.fillRect(19, -1.3, 4, 2.6);
+    ctx.fillRect(19 - recoil, -1.3, 4, 2.6);
   }
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.fillRect(-12, -8, 24, 1);
   ctx.restore();
   ctx.restore();
   ctx.restore();
@@ -1406,9 +1404,11 @@ function drawHumanoidEnemy(enemy, x, y) {
   const palette = enemy.variant || HUMANOID_VARIANTS[0];
   const stride = enemy.moving ? Math.sin(enemy.walkCycle) : 0;
   const bob = enemy.moving ? Math.sin(enemy.walkCycle * 2) * 1.9 : 0;
+  const sway = enemy.moving ? Math.sin(enemy.walkCycle * 0.5) * 0.22 : 0;
 
   ctx.save();
   ctx.translate(x, y + bob);
+  ctx.rotate(sway);
 
   ctx.fillStyle = palette.pants;
   ctx.fillRect(-9, 7 + stride * 5, 7, 15);
@@ -1425,16 +1425,17 @@ function drawHumanoidEnemy(enemy, x, y) {
   ctx.fillRect(-11, -4, 22, 15);
 
   ctx.fillStyle = palette.skin;
-  ctx.fillRect(-13, 0, 3.5, 10);
-  ctx.fillRect(9.5, 0, 3.5, 10);
+  const armSwing = enemy.moving ? Math.sin(enemy.walkCycle + Math.PI / 2) * 2 : 0;
+  ctx.fillRect(-13, 0 + armSwing, 3.5, 10);
+  ctx.fillRect(9.5, 0 - armSwing, 3.5, 10);
   ctx.fillRect(-8, -16, 16, 13);
 
   ctx.fillStyle = palette.hair;
   ctx.fillRect(-8, -16, 16, 4);
 
   ctx.fillStyle = '#16212b';
-  ctx.fillRect(-5, -10, 2.2, 2.2);
-  ctx.fillRect(2.5, -10, 2.2, 2.2);
+  ctx.fillRect(-5 + sway * 8, -10, 2.2, 2.2);
+  ctx.fillRect(2.5 + sway * 8, -10, 2.2, 2.2);
 
   ctx.fillStyle = '#ba5058';
   ctx.fillRect(8, 1.2, 10, 4.2);
@@ -1534,7 +1535,6 @@ function updatePanel(livingEnemies) {
 
     <p class="status-text"><strong>Status:</strong> ${statusMsg}</p>
     <p class="status-text"><strong>Objective:</strong> ${objectiveText} (toggle: ${game.keybinds.objectiveToggle.toUpperCase()})</p>
-    <p class="status-text"><strong>Pickups:</strong> yellow rounds = Blaster · red shells = Shotgun · crimson dart = Sniper · med kit = Health · 🛡 = Armor</p>
   `;
 
   scoreboardEl.innerHTML = `
@@ -1558,10 +1558,7 @@ function updatePanel(livingEnemies) {
         <span class="meta-label">Kills this run</span>
         <span class="meta-value">${game.killCount}</span>
       </div>
-      <div class="kpi">
-        <span class="meta-label">Keybinds</span>
-        <span class="meta-value">Reload ${game.keybinds.reload.toUpperCase()} · Pause ${game.keybinds.pause.toUpperCase()}</span>
-      </div>
+      <p class="status-text">Key rebinding is available in the pause menu.</p>
     </div>
   `;
 }
@@ -1576,9 +1573,49 @@ function syncSettingsInputs() {
   if (pauseBtn) pauseBtn.textContent = game.paused ? 'Resume' : 'Pause';
 
   setValue('objectiveModeSelect', game.objectiveMode);
-  setValue('reloadBindInput', game.keybinds.reload);
-  setValue('pauseBindInput', game.keybinds.pause);
-  setValue('objectiveBindInput', game.keybinds.objectiveToggle);
+}
+
+function setPaused(nextPaused) {
+  game.paused = nextPaused;
+  game.message = game.paused ? 'Paused.' : 'Resumed.';
+  syncSettingsInputs();
+  renderPauseOverlay();
+}
+
+function renderPauseOverlay() {
+  if (!pauseOverlayEl) return;
+
+  if (!game.paused) {
+    pauseOverlayEl.classList.remove('is-visible');
+    pauseOverlayEl.innerHTML = '';
+    return;
+  }
+
+  pauseOverlayEl.classList.add('is-visible');
+  pauseOverlayEl.innerHTML = `
+    <div class="pause-card">
+      <h2>Paused</h2>
+      <p>Adjust controls while paused, then resume your run.</p>
+      <div class="settings-row"><span>Reload key</span><input id="pauseReloadBindInput" maxlength="1" value="${game.keybinds.reload}" /></div>
+      <div class="settings-row"><span>Pause key</span><input id="pausePauseBindInput" maxlength="1" value="${game.keybinds.pause}" /></div>
+      <div class="settings-row"><span>Objective key</span><input id="pauseObjectiveBindInput" maxlength="1" value="${game.keybinds.objectiveToggle}" /></div>
+      <button id="resumeBtn" type="button">Resume</button>
+    </div>
+  `;
+
+  document.getElementById('resumeBtn')?.addEventListener('click', () => setPaused(false));
+  document.getElementById('pauseReloadBindInput')?.addEventListener('change', (e) => {
+    game.keybinds.reload = normalizeKey(e.target.value, game.keybinds.reload);
+    renderPauseOverlay();
+  });
+  document.getElementById('pausePauseBindInput')?.addEventListener('change', (e) => {
+    game.keybinds.pause = normalizeKey(e.target.value, game.keybinds.pause);
+    renderPauseOverlay();
+  });
+  document.getElementById('pauseObjectiveBindInput')?.addEventListener('change', (e) => {
+    game.keybinds.objectiveToggle = normalizeKey(e.target.value, game.keybinds.objectiveToggle);
+    renderPauseOverlay();
+  });
 }
 
 function initSettingsUI() {
@@ -1596,25 +1633,12 @@ function initSettingsUI() {
           <option value="speedrun">Speedrun (free exit)</option>
         </select>
       </div>
-      <div class="settings-row">
-        <span>Reload key</span>
-        <input id="reloadBindInput" maxlength="1" />
-      </div>
-      <div class="settings-row">
-        <span>Pause key</span>
-        <input id="pauseBindInput" maxlength="1" />
-      </div>
-      <div class="settings-row">
-        <span>Objective toggle key</span>
-        <input id="objectiveBindInput" maxlength="1" />
-      </div>
+      <p class="status-text">Key rebinding is available in the pause menu.</p>
     </div>
   `;
 
   document.getElementById('pauseToggleBtn')?.addEventListener('click', () => {
-    game.paused = !game.paused;
-    game.message = game.paused ? 'Paused.' : 'Resumed.';
-    syncSettingsInputs();
+    setPaused(!game.paused);
   });
 
   document.getElementById('objectiveModeSelect')?.addEventListener('change', (e) => {
@@ -1623,22 +1647,8 @@ function initSettingsUI() {
     syncSettingsInputs();
   });
 
-  document.getElementById('reloadBindInput')?.addEventListener('change', (e) => {
-    game.keybinds.reload = normalizeKey(e.target.value, game.keybinds.reload);
-    syncSettingsInputs();
-  });
-
-  document.getElementById('pauseBindInput')?.addEventListener('change', (e) => {
-    game.keybinds.pause = normalizeKey(e.target.value, game.keybinds.pause);
-    syncSettingsInputs();
-  });
-
-  document.getElementById('objectiveBindInput')?.addEventListener('change', (e) => {
-    game.keybinds.objectiveToggle = normalizeKey(e.target.value, game.keybinds.objectiveToggle);
-    syncSettingsInputs();
-  });
-
   syncSettingsInputs();
+  renderPauseOverlay();
 }
 
 function resizeCanvasToViewport() {
@@ -1664,12 +1674,12 @@ function gameLoop(timestamp) {
 
 window.addEventListener('keydown', (e) => {
   const key = e.key.toLowerCase();
+  const activeTag = document.activeElement?.tagName;
+  if (activeTag === 'INPUT' || activeTag === 'SELECT' || activeTag === 'TEXTAREA') return;
   game.keys.add(key);
 
   if (key === game.keybinds.pause) {
-    game.paused = !game.paused;
-    game.message = game.paused ? 'Paused.' : 'Resumed.';
-    syncSettingsInputs();
+    setPaused(!game.paused);
   }
 
   if (key === game.keybinds.objectiveToggle) {

@@ -999,11 +999,49 @@ function update(dt) {
   updatePanel(living);
 }
 
+function drawSpaceParallax(camera) {
+  const t = performance.now() * 0.0001;
+  const layers = [
+    { speed: 0.08, size: 1.4, density: 150, color: 'rgba(196, 226, 255, 0.42)' },
+    { speed: 0.15, size: 1.9, density: 110, color: 'rgba(154, 201, 255, 0.35)' },
+    { speed: 0.24, size: 2.4, density: 80, color: 'rgba(131, 176, 255, 0.3)' }
+  ];
+
+  const bgGradient = ctx.createRadialGradient(canvas.width * 0.65, canvas.height * 0.4, 90, canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.8);
+  bgGradient.addColorStop(0, '#111b2f');
+  bgGradient.addColorStop(0.5, '#090f1d');
+  bgGradient.addColorStop(1, '#04070e');
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'rgba(92, 128, 220, 0.12)';
+  ctx.beginPath();
+  ctx.ellipse(canvas.width * 0.78, canvas.height * 0.22, 180, 90, -0.45, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(159, 93, 201, 0.08)';
+  ctx.beginPath();
+  ctx.ellipse(canvas.width * 0.23, canvas.height * 0.8, 220, 110, 0.35, 0, Math.PI * 2);
+  ctx.fill();
+
+  for (const layer of layers) {
+    ctx.fillStyle = layer.color;
+    for (let i = 0; i < layer.density; i += 1) {
+      const seedX = (i * 97.13) % (canvas.width + 120);
+      const seedY = (i * 57.77) % (canvas.height + 120);
+      const x = (seedX - camera.x * layer.speed + t * (35 + layer.speed * 120)) % (canvas.width + 120);
+      const y = (seedY - camera.y * layer.speed + t * (15 + layer.speed * 70)) % (canvas.height + 120);
+      ctx.fillRect((x + canvas.width + 120) % (canvas.width + 120) - 60, (y + canvas.height + 120) % (canvas.height + 120) - 60, layer.size, layer.size);
+    }
+  }
+}
+
 function drawGrid(camera) {
-  const startX = Math.floor((camera.x - canvas.width / 2) / TILE) - 1;
-  const endX = Math.ceil((camera.x + canvas.width / 2) / TILE) + 1;
-  const startY = Math.floor((camera.y - canvas.height / 2) / TILE) - 1;
-  const endY = Math.ceil((camera.y + canvas.height / 2) / TILE) + 1;
+  const mapWidth = game.activeMap.width;
+  const mapHeight = game.activeMap.height;
+  const startX = Math.max(0, Math.floor((camera.x - canvas.width / 2) / TILE) - 1);
+  const endX = Math.min(mapWidth - 1, Math.ceil((camera.x + canvas.width / 2) / TILE) + 1);
+  const startY = Math.max(0, Math.floor((camera.y - canvas.height / 2) / TILE) - 1);
+  const endY = Math.min(mapHeight - 1, Math.ceil((camera.y + canvas.height / 2) / TILE) + 1);
 
   for (let gy = startY; gy <= endY; gy += 1) {
     for (let gx = startX; gx <= endX; gx += 1) {
@@ -1012,25 +1050,35 @@ function drawGrid(camera) {
       const sx = tileWorldX - camera.x + canvas.width / 2;
       const sy = tileWorldY - camera.y + canvas.height / 2;
 
-      const baseShade = (gx + gy + game.mapIndex) % 2 === 0 ? '#152739' : '#132234';
+      const baseShade = (gx + gy + game.mapIndex) % 2 === 0 ? '#24313f' : '#202b38';
       ctx.fillStyle = baseShade;
       ctx.fillRect(sx, sy, TILE, TILE);
 
       const floorGrad = ctx.createLinearGradient(sx, sy, sx + TILE, sy + TILE);
-      floorGrad.addColorStop(0, 'rgba(103, 161, 210, 0.17)');
-      floorGrad.addColorStop(0.5, 'rgba(27, 57, 82, 0.14)');
-      floorGrad.addColorStop(1, 'rgba(9, 22, 36, 0.2)');
+      floorGrad.addColorStop(0, 'rgba(132, 178, 209, 0.17)');
+      floorGrad.addColorStop(0.5, 'rgba(67, 84, 101, 0.16)');
+      floorGrad.addColorStop(1, 'rgba(26, 35, 46, 0.28)');
       ctx.fillStyle = floorGrad;
       ctx.fillRect(sx, sy, TILE, TILE);
 
       const pulse = ((gx * 17 + gy * 11 + Math.floor(performance.now() * 0.004)) % 12) / 12;
-      ctx.fillStyle = `rgba(111, 234, 255, ${0.05 + pulse * 0.06})`;
-      ctx.fillRect(sx + 6, sy + 6, TILE - 12, 2);
-      ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.8);
-      ctx.fillRect(sx + 6, sy + 6, 1.8, TILE - 12);
-      ctx.fillRect(sx + TILE - 8, sy + 6, 1.8, TILE - 12);
+      ctx.fillStyle = `rgba(121, 188, 224, ${0.06 + pulse * 0.05})`;
+      ctx.fillRect(sx + 6, sy + 6, TILE - 12, 1.7);
+      ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.4);
 
-      ctx.strokeStyle = 'rgba(127, 196, 238, 0.18)';
+      ctx.fillStyle = 'rgba(205, 221, 232, 0.14)';
+      ctx.fillRect(sx + TILE * 0.28, sy + TILE * 0.18, TILE * 0.44, 2);
+      ctx.fillRect(sx + TILE * 0.18, sy + TILE * 0.72, TILE * 0.64, 1.5);
+
+      ctx.fillStyle = 'rgba(120, 146, 171, 0.26)';
+      ctx.beginPath();
+      ctx.arc(sx + 12, sy + 12, 2.1, 0, Math.PI * 2);
+      ctx.arc(sx + TILE - 12, sy + 12, 2.1, 0, Math.PI * 2);
+      ctx.arc(sx + 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
+      ctx.arc(sx + TILE - 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(140, 170, 194, 0.26)';
       ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
     }
   }
@@ -1038,32 +1086,40 @@ function drawGrid(camera) {
 
 function drawSciWall(x, y, w, h) {
   const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-  gradient.addColorStop(0, '#36526d');
-  gradient.addColorStop(0.5, '#253a4f');
-  gradient.addColorStop(1, '#1a2a3a');
+  gradient.addColorStop(0, '#4d5966');
+  gradient.addColorStop(0.52, '#323d49');
+  gradient.addColorStop(1, '#202a34');
   ctx.fillStyle = gradient;
   ctx.fillRect(x, y, w, h);
 
   const gloss = ctx.createLinearGradient(x, y, x, y + h);
-  gloss.addColorStop(0, 'rgba(154, 225, 255, 0.16)');
-  gloss.addColorStop(0.35, 'rgba(98, 162, 214, 0.06)');
-  gloss.addColorStop(1, 'rgba(6, 14, 24, 0.22)');
+  gloss.addColorStop(0, 'rgba(211, 224, 238, 0.16)');
+  gloss.addColorStop(0.35, 'rgba(124, 157, 188, 0.08)');
+  gloss.addColorStop(1, 'rgba(17, 25, 34, 0.22)');
   ctx.fillStyle = gloss;
   ctx.fillRect(x, y, w, h);
 
-  ctx.fillStyle = 'rgba(112, 175, 224, 0.22)';
+  ctx.fillStyle = 'rgba(160, 185, 207, 0.23)';
   for (let px = x + 6; px < x + w - 6; px += 18) {
     ctx.fillRect(px, y + 5, 10, 2);
     ctx.fillRect(px, y + h - 7, 10, 1.6);
   }
 
-  ctx.fillStyle = 'rgba(112, 245, 255, 0.12)';
+  ctx.fillStyle = 'rgba(105, 177, 228, 0.13)';
   for (let py = y + 8; py < y + h - 8; py += 20) {
     ctx.fillRect(x + 5, py, 2, 10);
     ctx.fillRect(x + w - 7, py, 2, 10);
   }
 
-  ctx.strokeStyle = '#7eb4dd';
+  ctx.fillStyle = 'rgba(178, 201, 219, 0.2)';
+  for (let py = y + 14; py < y + h - 12; py += 28) {
+    ctx.beginPath();
+    ctx.arc(x + 10, py, 2, 0, Math.PI * 2);
+    ctx.arc(x + w - 10, py, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = '#91a8bb';
   ctx.lineWidth = 1.5;
   ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
 }
@@ -1072,29 +1128,29 @@ function drawExitStairs(x, y) {
   ctx.save();
   ctx.translate(x, y);
 
-  const aura = ctx.createRadialGradient(0, 0, 6, 0, 0, 36);
-  aura.addColorStop(0, 'rgba(168, 255, 219, 0.5)');
-  aura.addColorStop(1, 'rgba(84, 212, 182, 0.05)');
+  const aura = ctx.createRadialGradient(0, 0, 6, 0, 0, 40);
+  aura.addColorStop(0, 'rgba(145, 255, 244, 0.48)');
+  aura.addColorStop(1, 'rgba(84, 212, 201, 0.04)');
   ctx.fillStyle = aura;
   ctx.beginPath();
   ctx.arc(0, 0, 36, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = 'rgba(145, 255, 220, 0.38)';
-  ctx.fillRect(-24, 16, 48, 6);
-  ctx.fillStyle = 'rgba(171, 255, 233, 0.5)';
-  ctx.fillRect(-18, 9, 36, 5);
-  ctx.fillStyle = 'rgba(195, 255, 241, 0.62)';
-  ctx.fillRect(-12, 2, 24, 5);
-  ctx.fillStyle = 'rgba(220, 255, 247, 0.75)';
-  ctx.fillRect(-6, -5, 12, 5);
+  ctx.fillStyle = 'rgba(123, 243, 255, 0.34)';
+  ctx.fillRect(-26, 17, 52, 6);
+  ctx.fillStyle = 'rgba(150, 255, 248, 0.46)';
+  ctx.fillRect(-20, 10, 40, 5);
+  ctx.fillStyle = 'rgba(188, 255, 250, 0.58)';
+  ctx.fillRect(-14, 3, 28, 5);
+  ctx.fillStyle = 'rgba(222, 255, 251, 0.72)';
+  ctx.fillRect(-7, -4, 14, 5);
 
-  ctx.strokeStyle = '#8dffd0';
+  ctx.strokeStyle = '#8ff8ec';
   ctx.lineWidth = 1;
-  ctx.strokeRect(-24, 16, 48, 6);
-  ctx.strokeRect(-18, 9, 36, 5);
-  ctx.strokeRect(-12, 2, 24, 5);
-  ctx.strokeRect(-6, -5, 12, 5);
+  ctx.strokeRect(-26, 17, 52, 6);
+  ctx.strokeRect(-20, 10, 40, 5);
+  ctx.strokeRect(-14, 3, 28, 5);
+  ctx.strokeRect(-7, -4, 14, 5);
 
   ctx.restore();
 }
@@ -1165,6 +1221,7 @@ function draw() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  drawSpaceParallax(camera);
   drawGrid(camera);
 
   for (const wall of mapRects()) {

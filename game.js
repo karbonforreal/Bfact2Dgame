@@ -120,20 +120,31 @@ const maps = [
     width: 24,
     height: 16,
     walls: [
+      // outer boundary
       [0, 0, 24, 1], [0, 15, 24, 1], [0, 0, 1, 16], [23, 0, 1, 16],
-      [5, 2, 1, 9], [10, 5, 1, 10], [13, 1, 1, 9], [18, 6, 1, 9],
-      [2, 11, 7, 1], [14, 3, 7, 1]
+      // interior walls
+      [5, 2, 1, 9], [10, 5, 1, 10], [13, 1, 1, 9],
+      [2, 11, 7, 1], [14, 3, 7, 1],
+      // exit room enclosure: bottom-right corner room (x:19-23, y:12-15)
+      [19, 12, 1, 1], [19, 14, 1, 1], // left wall of exit room with gap at y=13 for door
+      [19, 12, 4, 1]  // top wall of exit room
     ],
+    // door at tile (19, 13) - entrance to exit room (1 tile wide)
+    doors: [
+      { x: 19, y: 13, w: 1, h: 1 }
+    ],
+    // key placed far from door, in the upper-left area
+    keyPickup: { x: 3.5, y: 8.5 },
     enemies: [
       { x: 7, y: 4, hp: 55 },
       { x: 11, y: 12, hp: 65, type: 'flanker' },
-      { x: 19, y: 10, hp: 65 },
+      { x: 17, y: 8, hp: 65 },
       { x: 17, y: 2, hp: 50, type: 'shield' },
-      { x: 20, y: 8, hp: 45, type: 'dog' }
+      { x: 15, y: 6, hp: 45, type: 'dog' }
     ],
     pickups: [
       { x: 3.5, y: 3.5, type: 'ammo-blaster', value: 15 },
-      { x: 20.5, y: 13.5, type: 'health', value: 20 },
+      { x: 14.5, y: 7.5, type: 'health', value: 20 },
       { x: 11.5, y: 8.5, type: 'armor', value: 20 }
     ],
     spawn: { x: 2.5, y: 2.5 },
@@ -144,25 +155,37 @@ const maps = [
     width: 28,
     height: 18,
     walls: [
+      // outer boundary
       [0, 0, 28, 1], [0, 17, 28, 1], [0, 0, 1, 18], [27, 0, 1, 18],
+      // interior walls
       [4, 4, 16, 1], [4, 4, 1, 9], [8, 8, 1, 9], [12, 5, 1, 4],
-      [16, 7, 1, 10], [20, 6, 1, 5], [23, 8, 1, 8],
-      [5, 12, 13, 1], [15, 15, 10, 1]
+      [16, 7, 1, 10], [20, 6, 1, 5],
+      [5, 12, 13, 1],
+      // exit room enclosure: bottom-right (x:23-27, y:13-17)
+      [23, 13, 4, 1],  // top wall of exit room
+      [23, 13, 1, 2],  // left wall segment above door
+      [23, 16, 1, 1]   // left wall segment below door
     ],
+    // door at tile (23, 15) - entrance to exit room
+    doors: [
+      { x: 23, y: 15, w: 1, h: 1 }
+    ],
+    // key placed far away, upper-left area
+    keyPickup: { x: 2.5, y: 6.5 },
     enemies: [
       { x: 7, y: 14, hp: 70, type: 'shield' },
       { x: 11, y: 3, hp: 70 },
       { x: 17, y: 11, hp: 80, type: 'flanker' },
       { x: 22, y: 5, hp: 80 },
-      { x: 24, y: 14, hp: 90 },
+      { x: 24, y: 3, hp: 90 },
       { x: 13, y: 15, hp: 55, type: 'dog' },
-      { x: 21, y: 12, hp: 55, type: 'dog' }
+      { x: 10, y: 10, hp: 55, type: 'dog' }
     ],
     pickups: [
       { x: 2.5, y: 15.5, type: 'ammo-blaster', value: 20 },
       { x: 25.5, y: 2.5, type: 'health', value: 25 },
       { x: 14.5, y: 10.5, type: 'ammo-shotgun', value: 4 },
-      { x: 20.5, y: 15.5, type: 'armor', value: 25 }
+      { x: 6.5, y: 6.5, type: 'armor', value: 25 }
     ],
     spawn: { x: 2.5, y: 2.5 },
     exit: { x: 25.5, y: 15.5 }
@@ -172,26 +195,38 @@ const maps = [
     width: 30,
     height: 20,
     walls: [
+      // outer boundary
       [0, 0, 30, 1], [0, 19, 30, 1], [0, 0, 1, 20], [29, 0, 1, 20],
+      // interior walls
       [3, 4, 10, 1], [3, 4, 1, 10], [7, 8, 1, 10], [11, 2, 1, 8],
-      [15, 6, 1, 12], [19, 3, 1, 10], [23, 8, 1, 10], [26, 3, 1, 13],
-      [4, 14, 16, 1], [10, 17, 12, 1]
+      [15, 6, 1, 12], [19, 3, 1, 10],
+      [4, 14, 16, 1], [10, 17, 12, 1],
+      // exit room enclosure: bottom-right (x:24-29, y:15-19)
+      [24, 15, 5, 1],  // top wall of exit room
+      [24, 15, 1, 2],  // left wall segment above door
+      [24, 18, 1, 1]   // left wall segment below door
     ],
+    // door at tile (24, 17) - entrance to exit room
+    doors: [
+      { x: 24, y: 17, w: 1, h: 1 }
+    ],
+    // key placed far away, upper-left area
+    keyPickup: { x: 5.5, y: 6.5 },
     enemies: [
       { x: 5, y: 16, hp: 85 },
       { x: 9, y: 6, hp: 90, type: 'shield' },
       { x: 14, y: 11, hp: 95 },
       { x: 18, y: 5, hp: 90, type: 'flanker' },
-      { x: 22, y: 14, hp: 100 },
-      { x: 25, y: 10, hp: 105 },
+      { x: 22, y: 11, hp: 100 },
+      { x: 13, y: 3, hp: 105 },
       { x: 12, y: 15, hp: 70, type: 'dog' },
-      { x: 24, y: 4, hp: 70, type: 'dog' }
+      { x: 20, y: 8, hp: 70, type: 'dog' }
     ],
     pickups: [
       { x: 2.5, y: 17.5, type: 'ammo-sniper', value: 3 },
       { x: 13.5, y: 3.5, type: 'health', value: 25 },
-      { x: 21.5, y: 16.5, type: 'armor', value: 35 },
-      { x: 27.5, y: 2.5, type: 'ammo-blaster', value: 15 }
+      { x: 16.5, y: 16.5, type: 'armor', value: 35 },
+      { x: 22.5, y: 4.5, type: 'ammo-blaster', value: 15 }
     ],
     spawn: { x: 2.5, y: 2.5 },
     exit: { x: 27.5, y: 17.5 }
@@ -251,6 +286,8 @@ const game = {
   muzzleFlashes: [],
   enemies: [],
   pickups: [],
+  doors: [],
+  hasKey: false,
   keys: new Set(),
   mouse: { x: canvas.width / 2, y: canvas.height / 2, down: false },
   activeMap: null,
@@ -393,6 +430,21 @@ function startMap(index, keepPlayerState = true) {
   game.bullets = [];
   game.enemyBullets = [];
   game.muzzleFlashes = [];
+
+  // initialize doors (closed) and key
+  game.doors = (map.doors || []).map((d, i) => ({
+    ...d,
+    id: `${index}-door-${i}`,
+    open: false,
+    openAnim: 0
+  }));
+  game.hasKey = false;
+  game.keyPickup = map.keyPickup ? {
+    x: map.keyPickup.x * TILE,
+    y: map.keyPickup.y * TILE,
+    alive: true
+  } : null;
+
   game.message = `Map loaded: ${map.name} · Threat ${game.difficulty.label}`;
 }
 
@@ -400,6 +452,7 @@ function resetRun(lostRound = false) {
   if (lostRound) game.losses += 1;
   game.paused = false;
   game.killCount = 0;
+  game.hasKey = false;
   game.player.hp = game.player.maxHp;
   game.player.armor = 40;
   game.player.ammo.blaster = { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo };
@@ -416,12 +469,19 @@ function applyDamage(amount) {
 }
 
 function mapRects() {
-  return game.activeMap.walls.map(([x, y, w, h]) => ({
+  const rects = game.activeMap.walls.map(([x, y, w, h]) => ({
     x: x * TILE,
     y: y * TILE,
     w: w * TILE,
     h: h * TILE
   }));
+  // closed doors act as walls
+  for (const door of game.doors) {
+    if (!door.open) {
+      rects.push({ x: door.x * TILE, y: door.y * TILE, w: door.w * TILE, h: door.h * TILE });
+    }
+  }
+  return rects;
 }
 
 function circleRectCollision(cx, cy, radius, rect) {
@@ -1009,6 +1069,38 @@ function update(dt) {
     }
   }
 
+  // key pickup
+  if (game.keyPickup && game.keyPickup.alive) {
+    if (Math.hypot(p.x - game.keyPickup.x, p.y - game.keyPickup.y) < 28) {
+      game.keyPickup.alive = false;
+      game.hasKey = true;
+      game.message = 'Key acquired! Find the locked door.';
+    }
+  }
+
+  // door opening: player walks up to a closed door while holding the key
+  for (const door of game.doors) {
+    if (door.open) {
+      door.openAnim = Math.min(1, door.openAnim + dt * 3);
+      continue;
+    }
+    const doorCenterX = (door.x + door.w / 2) * TILE;
+    const doorCenterY = (door.y + door.h / 2) * TILE;
+    const dist = Math.hypot(p.x - doorCenterX, p.y - doorCenterY);
+    if (dist < TILE * 1.5) {
+      if (game.hasKey) {
+        door.open = true;
+        door.openAnim = 0;
+        game.navGridCache.clear();
+        game.message = 'Door unlocked!';
+      } else if (!game.doorMsgCooldown || game.doorMsgCooldown <= 0) {
+        game.message = 'Door is locked. Find the key!';
+        game.doorMsgCooldown = 1.5;
+      }
+    }
+  }
+  if (game.doorMsgCooldown > 0) game.doorMsgCooldown -= dt;
+
   game.bullets = game.bullets.filter((b) => b.life > 0);
   game.enemyBullets = game.enemyBullets.filter((b) => b.life > 0);
   game.muzzleFlashes = game.muzzleFlashes.filter((flash) => {
@@ -1180,6 +1272,98 @@ function drawSciWall(x, y, w, h, theme) {
   ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
 }
 
+function drawKeyPickup(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // glow aura
+  const aura = ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
+  aura.addColorStop(0, 'rgba(255, 215, 60, 0.55)');
+  aura.addColorStop(1, 'rgba(255, 180, 0, 0.0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // key body
+  const bob = Math.sin(performance.now() * 0.004) * 3;
+  ctx.translate(0, bob);
+
+  // key ring (circle)
+  ctx.strokeStyle = '#ffd740';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(-4, -4, 6, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // key shaft
+  ctx.fillStyle = '#ffd740';
+  ctx.fillRect(1, -5, 14, 3);
+
+  // key teeth
+  ctx.fillRect(11, -2, 3, 4);
+  ctx.fillRect(7, -2, 3, 3);
+
+  ctx.restore();
+}
+
+function drawDoor(x, y, w, h, open, openAnim, theme) {
+  if (open && openAnim >= 1) return; // fully open, invisible
+
+  ctx.save();
+  const alpha = open ? Math.max(0, 1 - openAnim) : 1;
+  ctx.globalAlpha = alpha;
+
+  // door base
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  gradient.addColorStop(0, '#5a3a1a');
+  gradient.addColorStop(0.5, '#8b5e2f');
+  gradient.addColorStop(1, '#5a3a1a');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y, w, h);
+
+  // door frame border
+  ctx.strokeStyle = '#d4a44a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+
+  // lock icon in center
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  if (!open) {
+    // lock body
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(cx - 8, cy - 4, 16, 12);
+    ctx.strokeStyle = '#ffd740';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - 8, cy - 4, 16, 12);
+
+    // lock shackle
+    ctx.beginPath();
+    ctx.arc(cx, cy - 4, 6, Math.PI, 0);
+    ctx.stroke();
+
+    // keyhole
+    ctx.fillStyle = '#ffd740';
+    ctx.beginPath();
+    ctx.arc(cx, cy + 1, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(cx - 1, cy + 2, 2, 4);
+  }
+
+  // cross bars for reinforced look
+  ctx.strokeStyle = 'rgba(180, 140, 60, 0.5)';
+  ctx.lineWidth = 2;
+  for (let stripe = y + 12; stripe < y + h - 8; stripe += 16) {
+    ctx.beginPath();
+    ctx.moveTo(x + 6, stripe);
+    ctx.lineTo(x + w - 6, stripe);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 function drawExitStairs(x, y) {
   ctx.save();
   ctx.translate(x, y);
@@ -1287,8 +1471,20 @@ function draw() {
     drawSciWall(s.x, s.y, wall.w, wall.h, theme);
   }
 
+  // draw doors
+  for (const door of game.doors) {
+    const ds = worldToScreen(door.x * TILE, door.y * TILE, camera);
+    drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door.open, door.openAnim, theme);
+  }
+
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);
   drawExitStairs(exitPoint.x, exitPoint.y);
+
+  // draw key pickup
+  if (game.keyPickup && game.keyPickup.alive) {
+    const ks = worldToScreen(game.keyPickup.x, game.keyPickup.y, camera);
+    drawKeyPickup(ks.x, ks.y);
+  }
 
   for (const pickup of game.pickups) {
     if (!pickup.alive) continue;
@@ -1400,15 +1596,27 @@ function draw() {
   drawPlayer(p);
 
   ctx.fillStyle = 'rgba(15, 23, 35, 0.7)';
-  ctx.fillRect(16, 16, 250, 52);
+  ctx.fillRect(16, 16, 270, 68);
   ctx.strokeStyle = '#60d7ff';
-  ctx.strokeRect(16, 16, 250, 52);
+  ctx.strokeRect(16, 16, 270, 68);
   ctx.fillStyle = '#c7f5ff';
   ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
   ctx.font = '13px sans-serif';
-  ctx.fillText('Reach STAIRS to ascend', 26, 58);
+  ctx.fillText('Reach STAIRS to ascend', 26, 55);
+  // key status indicator
+  if (game.keyPickup) {
+    ctx.fillStyle = game.hasKey ? '#ffd740' : '#666';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(game.hasKey ? 'KEY' : 'KEY: ???', 26, 73);
+    if (game.hasKey) {
+      ctx.fillStyle = '#ffd740';
+      ctx.fillRect(62, 64, 10, 10);
+      ctx.strokeStyle = '#d4a44a';
+      ctx.strokeRect(62, 64, 10, 10);
+    }
+  }
 
   if (game.paused) {
     ctx.fillStyle = 'rgba(6, 12, 18, 0.5)';
@@ -1647,6 +1855,8 @@ function updatePanel(livingEnemies) {
         <div class="meter"><div class="meter-fill armor" style="width:100%"></div></div>
       </div>
     </div>
+
+    ${game.keyPickup ? `<div class="stat-card"><div class="stat-row"><span class="stat-label">Key</span><span class="stat-value ${game.hasKey ? 'value-good' : 'value-danger'}">${game.hasKey ? 'Acquired' : 'Not Found'}</span></div><div class="meter"><div class="meter-fill ${game.hasKey ? 'hp' : 'reload'}" style="width:${game.hasKey ? 100 : 0}%"></div></div></div>` : ''}
 
     <p class="status-text"><strong>Status:</strong> ${statusMsg}</p>
     <p class="status-text"><strong>Objective:</strong> ${objectiveText} (toggle: ${game.keybinds.objectiveToggle.toUpperCase()})</p>

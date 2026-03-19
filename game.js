@@ -116,120 +116,178 @@ const LEVEL_THEMES = [
 
 const maps = [
   {
+    // Level 1: Z-shaped path — Spawn→Cargo(right)→Central Hall(down)→Airlock(down)→Exit(right,locked)
+    // Branch rooms: Dock Clamps (left of hall), Storage (right of hall)
     name: 'Docking Ring',
-    width: 24,
-    height: 16,
-    walls: [
-      // outer boundary
-      [0, 0, 24, 1], [0, 15, 24, 1], [0, 0, 1, 16], [23, 0, 1, 16],
-      // interior walls
-      [5, 2, 1, 9], [10, 5, 1, 10], [13, 1, 1, 9],
-      [2, 11, 7, 1], [14, 3, 7, 1],
-      // exit room enclosure: bottom-right corner room (x:19-23, y:12-15)
-      [19, 12, 1, 1], [19, 14, 1, 1], // left wall of exit room with gap at y=13 for door
-      [19, 12, 4, 1]  // top wall of exit room
-    ],
-    // door at tile (19, 13) - entrance to exit room (1 tile wide)
-    doors: [
-      { x: 19, y: 13, w: 1, h: 1 }
-    ],
-    // key placed far from door, in the upper-left area
-    keyPickup: { x: 3.5, y: 8.5 },
-    enemies: [
-      { x: 7, y: 4, hp: 55 },
-      { x: 11, y: 12, hp: 65, type: 'flanker' },
-      { x: 17, y: 8, hp: 65 },
-      { x: 17, y: 2, hp: 50, type: 'shield' },
-      { x: 15, y: 6, hp: 45, type: 'dog' }
-    ],
-    pickups: [
-      { x: 3.5, y: 3.5, type: 'ammo-blaster', value: 15 },
-      { x: 14.5, y: 7.5, type: 'health', value: 20 },
-      { x: 11.5, y: 8.5, type: 'armor', value: 20 }
-    ],
-    spawn: { x: 2.5, y: 2.5 },
-    exit: { x: 21.5, y: 13.5 }
-  },
-  {
-    name: 'Core Archive',
-    width: 28,
-    height: 18,
-    walls: [
-      // outer boundary
-      [0, 0, 28, 1], [0, 17, 28, 1], [0, 0, 1, 18], [27, 0, 1, 18],
-      // interior walls
-      [4, 4, 16, 1], [4, 4, 1, 9], [8, 8, 1, 9], [12, 5, 1, 4],
-      [16, 7, 1, 10], [20, 6, 1, 5],
-      [5, 12, 13, 1],
-      // exit room enclosure: bottom-right (x:23-27, y:13-17)
-      [23, 13, 4, 1],  // top wall of exit room
-      [23, 13, 1, 2],  // left wall segment above door
-      [23, 16, 1, 1]   // left wall segment below door
-    ],
-    // door at tile (23, 15) - entrance to exit room
-    doors: [
-      { x: 23, y: 15, w: 1, h: 1 }
-    ],
-    // key placed far away, upper-left area
-    keyPickup: { x: 2.5, y: 6.5 },
-    enemies: [
-      { x: 7, y: 14, hp: 70, type: 'shield' },
-      { x: 11, y: 3, hp: 70 },
-      { x: 17, y: 11, hp: 80, type: 'flanker' },
-      { x: 22, y: 5, hp: 80 },
-      { x: 24, y: 3, hp: 90 },
-      { x: 13, y: 15, hp: 55, type: 'dog' },
-      { x: 10, y: 10, hp: 55, type: 'dog' }
-    ],
-    pickups: [
-      { x: 2.5, y: 15.5, type: 'ammo-blaster', value: 20 },
-      { x: 25.5, y: 2.5, type: 'health', value: 25 },
-      { x: 14.5, y: 10.5, type: 'ammo-shotgun', value: 4 },
-      { x: 6.5, y: 6.5, type: 'armor', value: 25 }
-    ],
-    spawn: { x: 2.5, y: 2.5 },
-    exit: { x: 25.5, y: 15.5 }
-  },
-  {
-    name: 'Reactor Vault',
     width: 30,
     height: 20,
     walls: [
       // outer boundary
       [0, 0, 30, 1], [0, 19, 30, 1], [0, 0, 1, 20], [29, 0, 1, 20],
-      // interior walls
-      [3, 4, 10, 1], [3, 4, 1, 10], [7, 8, 1, 10], [11, 2, 1, 8],
-      [15, 6, 1, 12], [19, 3, 1, 10],
-      [4, 14, 16, 1], [10, 17, 12, 1],
-      // exit room enclosure: bottom-right (x:24-29, y:15-19)
-      [24, 15, 5, 1],  // top wall of exit room
-      [24, 15, 1, 2],  // left wall segment above door
-      [24, 18, 1, 1]   // left wall segment below door
+      // --- TOP ROOMS (y:1-5): Spawn (x:1-8) | Cargo Bay (x:10-28) ---
+      [9, 1, 1, 2], [9, 4, 1, 2],       // wall x=9, door gap at (9,3)
+      // --- HORIZONTAL DIVIDER y=6 ---
+      [1, 6, 3, 1], [6, 6, 6, 1], [14, 6, 15, 1],
+      // gaps at x:4-5 (Spawn→Dock) and x:12-13 (Cargo→Hall)
+      // --- MIDDLE ROOMS (y:7-11) ---
+      // Dock Clamps (x:1-6) | Central Hall (x:8-19) | Storage (x:21-28)
+      [7, 7, 1, 1], [7, 9, 1, 3],       // wall x=7, door gap at (7,8)
+      [20, 7, 1, 2], [20, 10, 1, 2],    // wall x=20, door gap at (20,9)
+      // --- HORIZONTAL DIVIDER y=12 ---
+      [1, 12, 11, 1], [14, 12, 15, 1],
+      // gap at x:12-13 (Hall→Airlock)
+      // --- BOTTOM ROOMS (y:13-18): Airlock (x:1-13) | Exit Room (x:15-28) ---
+      [14, 13, 1, 2], [14, 16, 1, 3]    // wall x=14, locked door gap at (14,15)
     ],
-    // door at tile (24, 17) - entrance to exit room
     doors: [
-      { x: 24, y: 17, w: 1, h: 1 }
+      { x: 9, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 7, y: 8, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
+      { x: 20, y: 9, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 14, y: 15, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }
     ],
-    // key placed far away, upper-left area
-    keyPickup: { x: 5.5, y: 6.5 },
+    keyPickup: { x: 24.5, y: 3.5 },
+    features: [
+      { type: 'docking-clamp', x: 3.5, y: 9.5 },
+      { type: 'airlock-chamber', x: 7, y: 15.5 }
+    ],
     enemies: [
-      { x: 5, y: 16, hp: 85 },
-      { x: 9, y: 6, hp: 90, type: 'shield' },
-      { x: 14, y: 11, hp: 95 },
-      { x: 18, y: 5, hp: 90, type: 'flanker' },
-      { x: 22, y: 11, hp: 100 },
-      { x: 13, y: 3, hp: 105 },
-      { x: 12, y: 15, hp: 70, type: 'dog' },
-      { x: 20, y: 8, hp: 70, type: 'dog' }
+      { x: 18, y: 3, hp: 55 },
+      { x: 3, y: 9, hp: 45, type: 'dog' },
+      { x: 14, y: 9, hp: 65, type: 'flanker' },
+      { x: 24, y: 9, hp: 65, type: 'shield' },
+      { x: 7, y: 16, hp: 55 }
     ],
     pickups: [
-      { x: 2.5, y: 17.5, type: 'ammo-sniper', value: 3 },
-      { x: 13.5, y: 3.5, type: 'health', value: 25 },
-      { x: 16.5, y: 16.5, type: 'armor', value: 35 },
-      { x: 22.5, y: 4.5, type: 'ammo-blaster', value: 15 }
+      { x: 3.5, y: 3.5, type: 'ammo-blaster', value: 15 },
+      { x: 14.5, y: 10.5, type: 'health', value: 20 },
+      { x: 25.5, y: 10.5, type: 'armor', value: 20 }
     ],
-    spawn: { x: 2.5, y: 2.5 },
-    exit: { x: 27.5, y: 17.5 }
+    spawn: { x: 4.5, y: 3.5 },
+    exit: { x: 22.5, y: 15.5 }
+  },
+  {
+    // Level 2: S-shaped path — Spawn→DataHall(right)→Server(right)→corridor(down)→
+    //   side room→left room→Core Room→locked exit sub-room
+    // Bottom path: corridor(down)→Storage→Terminal→Archive
+    name: 'Core Archive',
+    width: 32,
+    height: 22,
+    walls: [
+      // outer boundary
+      [0, 0, 32, 1], [0, 21, 32, 1], [0, 0, 1, 22], [31, 0, 1, 22],
+      // --- TOP ROOMS (y:1-6): Spawn (x:1-9) | Data Hall (x:11-20) | Server Bank (x:22-30) ---
+      [10, 1, 1, 2], [10, 4, 1, 3],     // wall x=10, door gap at (10,3)
+      [21, 1, 1, 2], [21, 4, 1, 3],     // wall x=21, door gap at (21,3)
+      // --- HORIZONTAL DIVIDER y=7 ---
+      [1, 7, 21, 1], [24, 7, 7, 1],
+      // gap at x:22-23 (Server→right corridor down)
+      // --- MIDDLE SECTION (y:8-14) ---
+      // Left room (x:1-10) | Core room (x:12-20) | corridor (x:22-23) | Side room (x:25-30)
+      [21, 8, 1, 7],                     // left wall of corridor
+      [24, 8, 1, 3], [24, 12, 1, 3],    // right wall of corridor, door gap at (24,11)
+      [11, 8, 1, 3], [11, 12, 1, 3],    // left/core divider, door gap at (11,11)
+      // Core room exit partition (y=11): locked door separates upper core from exit area
+      [12, 11, 3, 1], [16, 11, 5, 1],   // partition in core room, locked door gap at (15,11)
+      // --- HORIZONTAL DIVIDER y=15 ---
+      [1, 15, 7, 1], [10, 15, 12, 1], [24, 15, 7, 1],
+      // gaps at x:8-9 (left room→Archive) and x:22-23 (corridor→Storage)
+      // --- BOTTOM ROOMS (y:16-20): Archive (x:1-10) | Terminal (x:12-20) | Storage (x:22-30) ---
+      [11, 16, 1, 2], [11, 19, 1, 2],   // Archive/Terminal wall, door gap at (11,18)
+      [21, 16, 1, 2], [21, 19, 1, 2]    // Terminal/Storage wall, door gap at (21,18)
+    ],
+    doors: [
+      { x: 10, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 21, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 11, y: 11, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
+      { x: 24, y: 11, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 11, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
+      { x: 21, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 15, y: 11, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }
+    ],
+    keyPickup: { x: 26.5, y: 3.5 },
+    features: [
+      { type: 'data-core', x: 16, y: 9.5 },
+      { type: 'server-racks', x: 26, y: 3.5 }
+    ],
+    enemies: [
+      { x: 16, y: 3, hp: 70 },
+      { x: 26, y: 5, hp: 80, type: 'shield' },
+      { x: 5, y: 11, hp: 70 },
+      { x: 27, y: 11, hp: 80, type: 'flanker' },
+      { x: 16, y: 9, hp: 75 },
+      { x: 5, y: 18, hp: 55, type: 'dog' },
+      { x: 16, y: 18, hp: 55, type: 'dog' }
+    ],
+    pickups: [
+      { x: 2.5, y: 18.5, type: 'ammo-blaster', value: 20 },
+      { x: 26.5, y: 1.5, type: 'health', value: 25 },
+      { x: 16.5, y: 13.5, type: 'ammo-shotgun', value: 4 },
+      { x: 6.5, y: 9.5, type: 'armor', value: 25 }
+    ],
+    spawn: { x: 5.5, y: 3.5 },
+    exit: { x: 16.5, y: 13.5 }
+  },
+  {
+    // Level 3: Snake path — Spawn→Decon(right)→Monitor(right)→corridor(down-right)→
+    //   Cooling→Reactor(left)→Maintenance(left)→corridor(down-left)→
+    //   Utility→Control(right)→locked door→Exit(right)
+    name: 'Reactor Vault',
+    width: 34,
+    height: 24,
+    walls: [
+      // outer boundary
+      [0, 0, 34, 1], [0, 23, 34, 1], [0, 0, 1, 24], [33, 0, 1, 24],
+      // --- TOP ROOMS (y:1-6): Spawn (x:1-10) | Decon (x:12-22) | Monitor (x:24-32) ---
+      [11, 1, 1, 2], [11, 4, 1, 3],     // wall x=11, door gap at (11,3)
+      [23, 1, 1, 2], [23, 4, 1, 3],     // wall x=23, door gap at (23,3)
+      // --- HORIZONTAL DIVIDER y=7 and y=8 (corridor gap x:25-27) ---
+      [1, 7, 24, 1], [28, 7, 5, 1],
+      [1, 8, 24, 1], [28, 8, 5, 1],
+      // gap at x:25-27 (Monitor→Cooling corridor, 3 tiles wide)
+      // --- MIDDLE ROOMS (y:9-15) ---
+      // Maintenance (x:1-10) | Reactor (x:12-22) | Cooling (x:24-32)
+      [11, 9, 1, 3], [11, 13, 1, 3],    // wall x=11, door gap at (11,12)
+      [23, 9, 1, 3], [23, 13, 1, 3],    // wall x=23, door gap at (23,12)
+      // --- HORIZONTAL DIVIDER y=16 and y=17 (corridor gap x:7-9) ---
+      [1, 16, 6, 1], [10, 16, 23, 1],
+      [1, 17, 6, 1], [10, 17, 23, 1],
+      // gap at x:7-9 (Maintenance→Utility corridor, 3 tiles wide)
+      // --- BOTTOM ROOMS (y:18-22) ---
+      // Utility (x:1-10) | Control (x:12-22) | Exit (x:24-32)
+      [11, 18, 1, 2], [11, 21, 1, 2],   // wall x=11, door gap at (11,20)
+      [23, 18, 1, 2], [23, 21, 1, 2]    // wall x=23, locked door gap at (23,20)
+    ],
+    doors: [
+      { x: 11, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 23, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 11, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
+      { x: 23, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
+      { x: 11, y: 20, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
+      { x: 23, y: 20, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }
+    ],
+    keyPickup: { x: 5.5, y: 12.5 },
+    features: [
+      { type: 'reactor-core', x: 17, y: 12 },
+      { type: 'coolant-pipes', x: 28, y: 12 }
+    ],
+    enemies: [
+      { x: 17, y: 3, hp: 90 },
+      { x: 28, y: 3, hp: 90, type: 'shield' },
+      { x: 5, y: 12, hp: 85 },
+      { x: 17, y: 10, hp: 95 },
+      { x: 17, y: 14, hp: 95, type: 'flanker' },
+      { x: 28, y: 12, hp: 100 },
+      { x: 17, y: 20, hp: 105 },
+      { x: 5, y: 20, hp: 70, type: 'dog' }
+    ],
+    pickups: [
+      { x: 2.5, y: 20.5, type: 'ammo-sniper', value: 3 },
+      { x: 17.5, y: 3.5, type: 'health', value: 25 },
+      { x: 17.5, y: 19.5, type: 'armor', value: 35 },
+      { x: 28.5, y: 3.5, type: 'ammo-blaster', value: 15 }
+    ],
+    spawn: { x: 5.5, y: 3.5 },
+    exit: { x: 28.5, y: 20.5 }
   }
 ];
 
@@ -1078,17 +1136,22 @@ function update(dt) {
     }
   }
 
-  // door opening: player walks up to a closed door while holding the key
+  // door opening: unlocked doors open on proximity, locked doors need the key
   for (const door of game.doors) {
     if (door.open) {
-      door.openAnim = Math.min(1, door.openAnim + dt * 3);
+      door.openAnim = Math.min(1, door.openAnim + dt * 2);
       continue;
     }
     const doorCenterX = (door.x + door.w / 2) * TILE;
     const doorCenterY = (door.y + door.h / 2) * TILE;
     const dist = Math.hypot(p.x - doorCenterX, p.y - doorCenterY);
     if (dist < TILE * 1.5) {
-      if (game.hasKey) {
+      if (!door.locked) {
+        door.open = true;
+        door.openAnim = 0;
+        game.navGridCache.clear();
+        game.message = 'Door opened.';
+      } else if (game.hasKey) {
         door.open = true;
         door.openAnim = 0;
         game.navGridCache.clear();
@@ -1307,14 +1370,8 @@ function drawKeyPickup(x, y) {
   ctx.restore();
 }
 
-function drawDoor(x, y, w, h, open, openAnim, theme) {
-  if (open && openAnim >= 1) return; // fully open, invisible
-
-  ctx.save();
-  const alpha = open ? Math.max(0, 1 - openAnim) : 1;
-  ctx.globalAlpha = alpha;
-
-  // door base
+function drawDoorPanel(x, y, w, h, locked) {
+  // door base - wood grain
   const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
   gradient.addColorStop(0, '#5a3a1a');
   gradient.addColorStop(0.5, '#8b5e2f');
@@ -1322,45 +1379,348 @@ function drawDoor(x, y, w, h, open, openAnim, theme) {
   ctx.fillStyle = gradient;
   ctx.fillRect(x, y, w, h);
 
-  // door frame border
+  // frame
   ctx.strokeStyle = '#d4a44a';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
 
-  // lock icon in center
-  const cx = x + w / 2;
-  const cy = y + h / 2;
-  if (!open) {
-    // lock body
+  // lock indicator for locked doors
+  if (locked) {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
     ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(cx - 8, cy - 4, 16, 12);
+    ctx.fillRect(cx - 5, cy - 3, 10, 8);
     ctx.strokeStyle = '#ffd740';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cx - 8, cy - 4, 16, 12);
-
-    // lock shackle
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - 5, cy - 3, 10, 8);
     ctx.beginPath();
-    ctx.arc(cx, cy - 4, 6, Math.PI, 0);
+    ctx.arc(cx, cy - 3, 3.5, Math.PI, 0);
     ctx.stroke();
-
-    // keyhole
     ctx.fillStyle = '#ffd740';
     ctx.beginPath();
-    ctx.arc(cx, cy + 1, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillRect(cx - 1, cy + 2, 2, 4);
   }
 
   // cross bars for reinforced look
   ctx.strokeStyle = 'rgba(180, 140, 60, 0.5)';
-  ctx.lineWidth = 2;
-  for (let stripe = y + 12; stripe < y + h - 8; stripe += 16) {
-    ctx.beginPath();
-    ctx.moveTo(x + 6, stripe);
-    ctx.lineTo(x + w - 6, stripe);
-    ctx.stroke();
+  ctx.lineWidth = 1.5;
+  const longDim = Math.max(w, h);
+  if (h > w) {
+    for (let stripe = y + 8; stripe < y + h - 4; stripe += 12) {
+      ctx.beginPath();
+      ctx.moveTo(x + 2, stripe);
+      ctx.lineTo(x + w - 2, stripe);
+      ctx.stroke();
+    }
+  } else {
+    for (let stripe = x + 8; stripe < x + w - 4; stripe += 12) {
+      ctx.beginPath();
+      ctx.moveTo(stripe, y + 2);
+      ctx.lineTo(stripe, y + h - 2);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawDoor(sx, sy, tw, th, door, theme) {
+  const thickness = 14;
+  const swingProgress = door.open ? Math.min(1, door.openAnim) : 0;
+  const angle = swingProgress * (Math.PI * 0.45) * (door.swingDir || 1);
+
+  // always draw door frame (the archway remains visible)
+  ctx.save();
+  ctx.strokeStyle = '#d4a44a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(sx + 1, sy + 1, tw - 2, th - 2);
+  // frame corner accents
+  ctx.fillStyle = '#b8882e';
+  const cs = 5;
+  ctx.fillRect(sx, sy, cs, cs);
+  ctx.fillRect(sx + tw - cs, sy, cs, cs);
+  ctx.fillRect(sx, sy + th - cs, cs, cs);
+  ctx.fillRect(sx + tw - cs, sy + th - cs, cs, cs);
+  ctx.restore();
+
+  // draw swinging panel if not fully open
+  if (door.open && door.openAnim >= 1) return;
+
+  ctx.save();
+
+  if ((door.orientation || 'v') === 'v') {
+    // vertical wall door: panel is tall and thin, swings around top hinge
+    const hingeX = sx + tw / 2;
+    const hingeY = sy;
+    ctx.translate(hingeX, hingeY);
+    ctx.rotate(angle);
+    drawDoorPanel(-thickness / 2, 0, thickness, th, door.locked);
+  } else {
+    // horizontal wall door: panel is wide and thin, swings around left hinge
+    const hingeX = sx;
+    const hingeY = sy + th / 2;
+    ctx.translate(hingeX, hingeY);
+    ctx.rotate(angle);
+    drawDoorPanel(0, -thickness / 2, tw, thickness, door.locked);
   }
 
+  ctx.restore();
+}
+
+// ===== UNIQUE LEVEL FEATURES =====
+
+function drawMapFeatures(camera) {
+  const map = game.activeMap;
+  if (!map.features) return;
+  for (const feature of map.features) {
+    const s = worldToScreen(feature.x * TILE, feature.y * TILE, camera);
+    switch (feature.type) {
+      case 'docking-clamp': drawDockingClamp(s.x, s.y); break;
+      case 'airlock-chamber': drawAirlockChamber(s.x, s.y); break;
+      case 'data-core': drawDataCore(s.x, s.y); break;
+      case 'server-racks': drawServerRacks(s.x, s.y); break;
+      case 'reactor-core': drawReactorCore(s.x, s.y); break;
+      case 'coolant-pipes': drawCoolantPipes(s.x, s.y); break;
+    }
+  }
+}
+
+function drawDockingClamp(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // base plate
+  ctx.fillStyle = 'rgba(100, 120, 140, 0.25)';
+  ctx.fillRect(-48, -48, 96, 96);
+  ctx.strokeStyle = 'rgba(150, 180, 200, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-48, -48, 96, 96);
+  // mechanical arms
+  ctx.strokeStyle = '#8a9bab';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-40, 5); ctx.lineTo(-18, -22); ctx.lineTo(0, -8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(40, 5); ctx.lineTo(18, -22); ctx.lineTo(0, -8); ctx.stroke();
+  // hydraulic cylinders
+  ctx.fillStyle = '#5a7080';
+  ctx.fillRect(-36, 10, 10, 24);
+  ctx.fillRect(26, 10, 10, 24);
+  // piston highlights
+  ctx.fillStyle = '#7a9aaa';
+  ctx.fillRect(-34, 12, 3, 20);
+  ctx.fillRect(31, 12, 3, 20);
+  // clamp heads
+  ctx.fillStyle = '#d4a44a';
+  ctx.beginPath(); ctx.arc(-40, 5, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(40, 5, 6, 0, Math.PI * 2); ctx.fill();
+  // center pivot
+  ctx.fillStyle = '#4a6a8a';
+  ctx.beginPath(); ctx.arc(0, -8, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#6a8aaa';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, -8, 10, 0, Math.PI * 2); ctx.stroke();
+  // inner bolt
+  ctx.fillStyle = '#2a3a4a';
+  ctx.beginPath(); ctx.arc(0, -8, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawAirlockChamber(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.002;
+  // warning stripes floor pattern
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-55, -55, 110, 110);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(200, 180, 30, 0.13)';
+  for (let i = -7; i < 7; i++) {
+    ctx.save();
+    ctx.rotate(Math.PI / 4);
+    ctx.fillRect(i * 18, -85, 9, 170);
+    ctx.restore();
+  }
+  ctx.restore();
+  // outer pressure ring
+  const pulseAlpha = 0.3 + Math.sin(t) * 0.15;
+  ctx.strokeStyle = `rgba(80, 200, 220, ${pulseAlpha})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.stroke();
+  // inner ring
+  ctx.strokeStyle = `rgba(80, 200, 220, ${pulseAlpha * 0.6})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.stroke();
+  // pressure indicators (4 rotating dots)
+  const dotAlpha = 0.5 + Math.sin(t * 1.5) * 0.3;
+  ctx.fillStyle = `rgba(100, 255, 200, ${dotAlpha})`;
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + t * 0.3;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * 32, Math.sin(a) * 32, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // center status light
+  const statusPulse = 0.6 + Math.sin(t * 2) * 0.3;
+  ctx.fillStyle = `rgba(50, 255, 180, ${statusPulse})`;
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawDataCore(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // glow aura
+  const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, 55);
+  glow.addColorStop(0, `rgba(100, 180, 255, ${0.35 + Math.sin(t * 2) * 0.12})`);
+  glow.addColorStop(1, 'rgba(50, 100, 200, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, 55, 0, Math.PI * 2); ctx.fill();
+  // core sphere
+  const coreGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, 18);
+  coreGrad.addColorStop(0, '#aaddff');
+  coreGrad.addColorStop(0.6, '#4488cc');
+  coreGrad.addColorStop(1, '#224466');
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill();
+  // rotating data rings
+  ctx.strokeStyle = 'rgba(130, 200, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(0, 0, 30, 10, t * 0.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(130, 200, 255, 0.4)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 26, 12, -t * 0.3 + 1, 0, Math.PI * 2); ctx.stroke();
+  // data particles orbiting
+  ctx.fillStyle = 'rgba(200, 230, 255, 0.8)';
+  for (let i = 0; i < 6; i++) {
+    const a = t * 0.8 + (i / 6) * Math.PI * 2;
+    const r = 24 + Math.sin(t + i) * 4;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * r, Math.sin(a) * r * 0.4, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawServerRacks(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.003;
+  for (let rack = -1; rack <= 1; rack++) {
+    const rx = rack * 30;
+    // rack body
+    ctx.fillStyle = '#1a2233';
+    ctx.fillRect(rx - 11, -34, 22, 68);
+    ctx.strokeStyle = '#3a4a5a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(rx - 11, -34, 22, 68);
+    // drive bays with blinking lights
+    for (let bay = 0; bay < 7; bay++) {
+      const by = -29 + bay * 9;
+      ctx.fillStyle = '#0d1520';
+      ctx.fillRect(rx - 8, by, 16, 6);
+      // activity light
+      const blink = Math.sin(t * (2 + rack + bay * 0.7) + rack * 3 + bay * 1.5);
+      ctx.fillStyle = blink > 0 ? '#00ff88' : '#1a3322';
+      ctx.fillRect(rx + 5, by + 1.5, 3, 3);
+      // power light
+      ctx.fillStyle = '#4488ff';
+      ctx.fillRect(rx - 7, by + 1.5, 2, 3);
+    }
+  }
+  ctx.restore();
+}
+
+function drawReactorCore(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // hazard floor markings
+  ctx.strokeStyle = 'rgba(255, 200, 50, 0.25)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI * 2); ctx.stroke();
+  // radiation trefoil segments
+  ctx.fillStyle = 'rgba(255, 200, 50, 0.1)';
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + t * 0.2;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.arc(0, 0, 46, a, a + Math.PI * 0.45);
+    ctx.closePath(); ctx.fill();
+  }
+  // core glow
+  const glow = ctx.createRadialGradient(0, 0, 3, 0, 0, 40);
+  const pulseIntensity = 0.5 + Math.sin(t * 3) * 0.2;
+  glow.addColorStop(0, `rgba(255, 120, 50, ${pulseIntensity})`);
+  glow.addColorStop(0.5, `rgba(255, 80, 30, ${pulseIntensity * 0.5})`);
+  glow.addColorStop(1, 'rgba(200, 50, 20, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill();
+  // core center
+  const coreGrad = ctx.createRadialGradient(-2, -2, 1, 0, 0, 14);
+  coreGrad.addColorStop(0, '#ffeecc');
+  coreGrad.addColorStop(0.5, '#ff8844');
+  coreGrad.addColorStop(1, '#cc4422');
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+  // containment ring
+  ctx.strokeStyle = '#8a6a4a';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.stroke();
+  // containment bolts
+  ctx.fillStyle = '#aa8855';
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * 22, Math.sin(a) * 22, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawCoolantPipes(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.002;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  // main pipes
+  ctx.strokeStyle = '#4a7a8a';
+  ctx.lineWidth = 7;
+  ctx.beginPath(); ctx.moveTo(-50, 0); ctx.lineTo(50, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(0, 40); ctx.stroke();
+  // branch pipes
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-32, 0); ctx.lineTo(-32, -28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(32, 0); ctx.lineTo(32, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(25, -25); ctx.stroke();
+  // pipe highlights
+  ctx.strokeStyle = '#6a9aaa';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-50, -2); ctx.lineTo(50, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-2, -40); ctx.lineTo(-2, 40); ctx.stroke();
+  // flow indicators (animated dots)
+  ctx.fillStyle = '#88ddff';
+  for (let i = 0; i < 5; i++) {
+    const progress = ((t * 0.5 + i * 0.2) % 1);
+    ctx.beginPath();
+    ctx.arc(-50 + progress * 100, 0, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let i = 0; i < 4; i++) {
+    const progress = ((t * 0.4 + i * 0.25) % 1);
+    ctx.beginPath();
+    ctx.arc(0, -40 + progress * 80, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // junction nodes
+  ctx.fillStyle = '#3a6a7a';
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#5a8a9a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.stroke();
+  // secondary junctions
+  ctx.fillStyle = '#3a6a7a';
+  ctx.beginPath(); ctx.arc(-32, 0, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(32, 0, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -25, 4, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -1465,16 +1825,17 @@ function draw() {
 
   drawSpaceParallax(camera);
   drawGrid(camera);
+  drawMapFeatures(camera);
 
   for (const wall of mapRects()) {
     const s = worldToScreen(wall.x, wall.y, camera);
     drawSciWall(s.x, s.y, wall.w, wall.h, theme);
   }
 
-  // draw doors
+  // draw doors (swing-open style)
   for (const door of game.doors) {
     const ds = worldToScreen(door.x * TILE, door.y * TILE, camera);
-    drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door.open, door.openAnim, theme);
+    drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door, theme);
   }
 
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);

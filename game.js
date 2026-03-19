@@ -185,7 +185,7 @@ const maps = [
       // Left room (x:1-10) | Core room (x:12-20) | corridor (x:22-23) | Side room (x:25-30)
       [21, 8, 1, 7],                     // left wall of corridor
       [24, 8, 1, 3], [24, 12, 1, 3],    // right wall of corridor, door gap at (24,11)
-      [11, 8, 1, 3], [11, 12, 1, 3],    // left/core divider, door gap at (11,11)
+      [11, 8, 1, 2], [11, 11, 1, 4],    // left/core divider, door gap at (11,10)
       // Core room exit partition (y=11): locked door separates upper core from exit area
       [12, 11, 3, 1], [16, 11, 5, 1],   // partition in core room, locked door gap at (15,11)
       // --- HORIZONTAL DIVIDER y=15 ---
@@ -198,7 +198,7 @@ const maps = [
     doors: [
       { x: 10, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
       { x: 21, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 11, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
+      { x: 11, y: 10, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
       { x: 24, y: 11, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
       { x: 11, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
       { x: 21, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
@@ -1137,18 +1137,37 @@ function update(dt) {
   }
 
   // door opening: unlocked doors open on proximity, locked doors need the key
+  // doors auto-close after a few seconds if the player moves away (locked doors stay open)
   for (const door of game.doors) {
-    if (door.open) {
-      door.openAnim = Math.min(1, door.openAnim + dt * 2);
-      continue;
-    }
     const doorCenterX = (door.x + door.w / 2) * TILE;
     const doorCenterY = (door.y + door.h / 2) * TILE;
     const dist = Math.hypot(p.x - doorCenterX, p.y - doorCenterY);
+
+    if (door.open) {
+      door.openAnim = Math.min(1, door.openAnim + dt * 2);
+
+      // auto-close: tick timer when player is far enough away
+      if (!door.locked) {
+        if (dist < TILE * 2) {
+          door.closeTimer = 3.5; // reset timer while player is near
+        } else {
+          door.closeTimer = (door.closeTimer || 3.5) - dt;
+          if (door.closeTimer <= 0) {
+            door.open = false;
+            door.openAnim = 0;
+            door.closeTimer = 0;
+            game.navGridCache.clear();
+          }
+        }
+      }
+      continue;
+    }
+
     if (dist < TILE * 1.5) {
       if (!door.locked) {
         door.open = true;
         door.openAnim = 0;
+        door.closeTimer = 3.5;
         game.navGridCache.clear();
         game.message = 'Door opened.';
       } else if (game.hasKey) {

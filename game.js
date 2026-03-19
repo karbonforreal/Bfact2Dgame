@@ -137,6 +137,33 @@ const WEAPONS = {
     damage: 38,
     range: 74,
     arc: Math.PI * 0.48
+  },
+  plasma: {
+    name: 'Plasma Rifle',
+    slot: '5',
+    cooldown: 0.09,
+    damage: 16,
+    projectileSpeed: 850,
+    spread: 0.06,
+    magazineSize: 25,
+    reloadTime: 1.7,
+    reserveAmmo: 100,
+    ammoPickupType: 'ammo-plasma',
+    ammoPickupValue: 25
+  },
+  railgun: {
+    name: 'Railgun',
+    slot: '6',
+    cooldown: 2.2,
+    damage: 130,
+    projectileSpeed: 2000,
+    spread: 0,
+    magazineSize: 1,
+    reloadTime: 3.2,
+    reserveAmmo: 6,
+    pierceCount: 10,
+    ammoPickupType: 'ammo-railgun',
+    ammoPickupValue: 2
   }
 };
 
@@ -380,7 +407,9 @@ const game = {
     weapon1: WEAPONS.blaster.slot,
     weapon2: WEAPONS.shotgun.slot,
     weapon3: WEAPONS.sniper.slot,
-    weapon4: WEAPONS.knife.slot
+    weapon4: WEAPONS.knife.slot,
+    weapon5: WEAPONS.plasma.slot,
+    weapon6: WEAPONS.railgun.slot
   },
   difficulty: {
     hpScale: 1,
@@ -403,7 +432,9 @@ const game = {
     ammo: {
       blaster: { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo },
       shotgun: { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo },
-      sniper: { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo }
+      sniper: { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo },
+      plasma: { mag: WEAPONS.plasma.magazineSize, reserve: WEAPONS.plasma.reserveAmmo },
+      railgun: { mag: WEAPONS.railgun.magazineSize, reserve: WEAPONS.railgun.reserveAmmo }
     },
     reloading: 0,
     invulnerable: 0,
@@ -495,6 +526,14 @@ function startMap(index, keepPlayerState = true) {
       sniper: {
         mag: keepPlayerState ? Math.min(prev.ammo.sniper.mag, WEAPONS.sniper.magazineSize) : WEAPONS.sniper.magazineSize,
         reserve: keepPlayerState ? prev.ammo.sniper.reserve : WEAPONS.sniper.reserveAmmo
+      },
+      plasma: {
+        mag: keepPlayerState ? Math.min(prev.ammo.plasma.mag, WEAPONS.plasma.magazineSize) : WEAPONS.plasma.magazineSize,
+        reserve: keepPlayerState ? prev.ammo.plasma.reserve : WEAPONS.plasma.reserveAmmo
+      },
+      railgun: {
+        mag: keepPlayerState ? Math.min(prev.ammo.railgun.mag, WEAPONS.railgun.magazineSize) : WEAPONS.railgun.magazineSize,
+        reserve: keepPlayerState ? prev.ammo.railgun.reserve : WEAPONS.railgun.reserveAmmo
       }
     },
     fireCooldown: 0,
@@ -588,6 +627,8 @@ function resetRun(lostRound = false) {
   game.player.ammo.blaster = { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo };
   game.player.ammo.shotgun = { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo };
   game.player.ammo.sniper = { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo };
+  game.player.ammo.plasma = { mag: WEAPONS.plasma.magazineSize, reserve: WEAPONS.plasma.reserveAmmo };
+  game.player.ammo.railgun = { mag: WEAPONS.railgun.magazineSize, reserve: WEAPONS.railgun.reserveAmmo };
   startMap(0, false);
 }
 
@@ -980,7 +1021,11 @@ function shootPlayerWeapon() {
     });
   }
 
-  const flashColor = p.activeWeapon === 'sniper' ? '#ff6d6d' : p.activeWeapon === 'shotgun' ? '#ffd58f' : '#9bf7ff';
+  const flashColor = p.activeWeapon === 'sniper' ? '#ff6d6d'
+    : p.activeWeapon === 'shotgun' ? '#ffd58f'
+    : p.activeWeapon === 'plasma' ? '#b06dff'
+    : p.activeWeapon === 'railgun' ? '#00ffcc'
+    : '#9bf7ff';
   spawnMuzzleFlash(
     p.x + Math.cos(p.angle) * 26,
     p.y + Math.sin(p.angle) * 26,
@@ -1210,28 +1255,42 @@ function update(dt) {
     }
   }
 
-  // door opening: unlocked doors open on proximity, locked doors need the key
-  // doors auto-close after a few seconds if the player moves away (locked doors stay open)
+  // door opening: unlocked doors swing open, hold 2s, then swing closed. locked doors stay open.
   for (const door of game.doors) {
     const doorCenterX = (door.x + door.w / 2) * TILE;
     const doorCenterY = (door.y + door.h / 2) * TILE;
     const dist = Math.hypot(p.x - doorCenterX, p.y - doorCenterY);
 
     if (door.open) {
-      door.openAnim = Math.min(1, door.openAnim + dt * 2);
+      const phase = door.phase || 'opening';
 
-      // auto-close: tick timer when player is far enough away
-      if (!door.locked) {
-        if (dist < TILE * 2) {
-          door.closeTimer = 3.5; // reset timer while player is near
-        } else {
-          door.closeTimer = (door.closeTimer || 3.5) - dt;
-          if (door.closeTimer <= 0) {
-            door.open = false;
-            door.openAnim = 0;
-            door.closeTimer = 0;
-            game.navGridCache.clear();
+      if (phase === 'opening') {
+        door.openAnim = Math.min(1, door.openAnim + dt * 2);
+        if (door.openAnim >= 1) {
+          door.phase = 'hold';
+          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 2;
+        }
+      } else if (phase === 'hold') {
+        if (!door.locked) {
+          if (dist < TILE * 2) {
+            door.holdTimer = 2; // reset hold timer while player is nearby
+          } else {
+            door.holdTimer -= dt;
+            if (door.holdTimer <= 0) {
+              door.phase = 'closing';
+            }
           }
+        }
+      } else if (phase === 'closing') {
+        door.openAnim = Math.max(0, door.openAnim - dt * 2);
+        if (door.openAnim <= 0) {
+          door.open = false;
+          door.phase = 'closed';
+          game.navGridCache.clear();
+        }
+        // if player approaches while closing, swing back open
+        if (dist < TILE * 1.5 && !door.locked) {
+          door.phase = 'opening';
         }
       }
       continue;
@@ -1240,12 +1299,13 @@ function update(dt) {
     if (dist < TILE * 1.5) {
       if (!door.locked) {
         door.open = true;
+        door.phase = 'opening';
         door.openAnim = 0;
-        door.closeTimer = 3.5;
         game.navGridCache.clear();
         game.message = 'Door opened.';
       } else if (game.hasKey) {
         door.open = true;
+        door.phase = 'opening';
         door.openAnim = 0;
         game.navGridCache.clear();
         game.message = 'Door unlocked!';
@@ -1518,7 +1578,7 @@ function drawDoorPanel(x, y, w, h, locked) {
 
 function drawDoor(sx, sy, tw, th, door, theme) {
   const thickness = 14;
-  const swingProgress = door.open ? Math.min(1, door.openAnim) : 0;
+  const swingProgress = door.openAnim || 0;
   const angle = swingProgress * (Math.PI * 0.45) * (door.swingDir || 1);
 
   // always draw door frame (the archway remains visible)
@@ -1535,8 +1595,7 @@ function drawDoor(sx, sy, tw, th, door, theme) {
   ctx.fillRect(sx + tw - cs, sy + th - cs, cs, cs);
   ctx.restore();
 
-  // draw swinging panel if not fully open
-  if (door.open && door.openAnim >= 1) return;
+  // always draw the swinging panel — visible at all stages (open, hold, closing)
 
   ctx.save();
 
@@ -1871,6 +1930,20 @@ function drawAmmoPickupIcon(x, y, ammoType) {
     ctx.fill();
     ctx.fillStyle = '#f6f8ff';
     ctx.fillRect(-1, 4, 2, 3);
+  } else if (ammoType === 'ammo-plasma') {
+    // plasma orb icon
+    ctx.fillStyle = '#7b2dcc';
+    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e0aaff';
+    ctx.beginPath(); ctx.arc(-1.5, -2, 2.5, 0, Math.PI * 2); ctx.fill();
+  } else if (ammoType === 'ammo-railgun') {
+    // rail slug icon — long thin rectangle
+    ctx.fillStyle = '#007a60';
+    ctx.fillRect(-7, -2, 14, 4);
+    ctx.fillStyle = '#00ffcc';
+    ctx.fillRect(-7, -1, 14, 2);
+    ctx.fillStyle = '#c0fff2';
+    ctx.fillRect(-7, -1, 3, 2);
   } else {
     const bulletOffsets = [-5, 0, 5];
     for (const offset of bulletOffsets) {
@@ -1951,6 +2024,8 @@ function draw() {
     if (pickup.type === 'ammo-blaster') ctx.fillStyle = '#f1af3a';
     if (pickup.type === 'ammo-shotgun') ctx.fillStyle = '#ff7d57';
     if (pickup.type === 'ammo-sniper') ctx.fillStyle = '#ff5470';
+    if (pickup.type === 'ammo-plasma') ctx.fillStyle = '#c06dff';
+    if (pickup.type === 'ammo-railgun') ctx.fillStyle = '#00e8bb';
     if (pickup.type === 'health') ctx.fillStyle = '#7bff9f';
     if (pickup.type === 'armor') ctx.fillStyle = '#7bf9ff';
     ctx.fillRect(s.x - 10, s.y - 10, 20, 20);
@@ -2660,7 +2735,7 @@ function updatePanel(livingEnemies) {
         ${p.reloading > 0 ? `<div class="reload-wrap"><div class="stat-row"><span class="stat-label">Reload</span><span class="stat-value value-accent">${Math.round(reloadRatio * 100)}%</span></div><div class="meter"><div class="meter-fill reload" style="width:${reloadRatio * 100}%"></div></div></div>` : ''}
       </div>
       <div class="stat-card">
-        <div class="stat-row"><span class="stat-label">Weapon</span><span class="stat-value value-accent">${activeWeapon.name} <small>(press 1/2/3/4)</small></span></div>
+        <div class="stat-row"><span class="stat-label">Weapon</span><span class="stat-value value-accent">${activeWeapon.name} <small>(press 1-6)</small></span></div>
         <div class="meter"><div class="meter-fill armor" style="width:100%"></div></div>
       </div>
     </div>
@@ -2838,6 +2913,14 @@ window.addEventListener('keydown', (e) => {
   if (key === game.keybinds.weapon4) {
     game.player.activeWeapon = 'knife';
     game.message = 'Switched to knife.';
+  }
+  if (key === game.keybinds.weapon5) {
+    game.player.activeWeapon = 'plasma';
+    game.message = 'Switched to Plasma Rifle.';
+  }
+  if (key === game.keybinds.weapon6) {
+    game.player.activeWeapon = 'railgun';
+    game.message = 'Switched to Railgun.';
   }
 });
 

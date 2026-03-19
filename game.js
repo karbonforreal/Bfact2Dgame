@@ -246,7 +246,16 @@ const maps = [
     keyPickup: { x: 24.5, y: 3.5 },
     features: [
       { type: 'docking-clamp', x: 3.5, y: 9.5 },
-      { type: 'airlock-chamber', x: 7, y: 15.5 }
+      { type: 'airlock-chamber', x: 7, y: 15.5 },
+      { type: 'storage-crates', x: 22, y: 2.5, seed: 1 },
+      { type: 'storage-crates', x: 25.5, y: 8, seed: 3 },
+      { type: 'wall-console', x: 5, y: 2, variant: 0 },
+      { type: 'wall-console', x: 17, y: 2, variant: 1 },
+      { type: 'wall-locker', x: 3, y: 14.5 },
+      { type: 'fuel-barrel', x: 17.5, y: 8.5, seed: 2 },
+      { type: 'sparking-panel', x: 12, y: 9.5 },
+      { type: 'floor-grate', x: 10, y: 16 },
+      { type: 'fuel-barrel', x: 25, y: 15.5, seed: 0 }
     ],
     enemies: [
       { x: 18, y: 3, hp: 55 },
@@ -305,7 +314,18 @@ const maps = [
     keyPickup: { x: 26.5, y: 3.5 },
     features: [
       { type: 'data-core', x: 16, y: 9.5 },
-      { type: 'server-racks', x: 26, y: 3.5 }
+      { type: 'server-racks', x: 26, y: 3.5 },
+      { type: 'wall-console', x: 4, y: 2, variant: 2 },
+      { type: 'wall-console', x: 15, y: 2, variant: 0 },
+      { type: 'wall-console', x: 17, y: 13, variant: 1 },
+      { type: 'storage-crates', x: 3, y: 10.5, seed: 0 },
+      { type: 'storage-crates', x: 28, y: 18, seed: 2 },
+      { type: 'wall-locker', x: 26, y: 18 },
+      { type: 'floor-grate', x: 17, y: 17 },
+      { type: 'floor-grate', x: 6, y: 6 },
+      { type: 'sparking-panel', x: 8, y: 18 },
+      { type: 'fuel-barrel', x: 23, y: 11, seed: 1 },
+      { type: 'fuel-barrel', x: 8, y: 11, seed: 3 }
     ],
     enemies: [
       { x: 17, y: 5, hp: 65 },
@@ -365,7 +385,23 @@ const maps = [
     keyPickup: { x: 5.5, y: 12.5 },
     features: [
       { type: 'reactor-core', x: 17, y: 12 },
-      { type: 'coolant-pipes', x: 28, y: 12 }
+      { type: 'coolant-pipes', x: 28, y: 12 },
+      { type: 'wall-console', x: 5, y: 2, variant: 2 },
+      { type: 'wall-console', x: 18, y: 2, variant: 0 },
+      { type: 'wall-console', x: 30, y: 2, variant: 1 },
+      { type: 'wall-console', x: 5, y: 20, variant: 0 },
+      { type: 'wall-console', x: 18, y: 20, variant: 2 },
+      { type: 'storage-crates', x: 7, y: 3, seed: 2 },
+      { type: 'storage-crates', x: 18, y: 22, seed: 1 },
+      { type: 'wall-locker', x: 20, y: 22 },
+      { type: 'wall-locker', x: 30, y: 22 },
+      { type: 'fuel-barrel', x: 9, y: 12, seed: 1 },
+      { type: 'fuel-barrel', x: 30, y: 20, seed: 0 },
+      { type: 'sparking-panel', x: 15, y: 18 },
+      { type: 'sparking-panel', x: 24, y: 3.5 },
+      { type: 'floor-grate', x: 6, y: 21 },
+      { type: 'floor-grate', x: 17, y: 5.5 },
+      { type: 'floor-grate', x: 30, y: 11.5 }
     ],
     enemies: [
       { x: 17, y: 3, hp: 90 },
@@ -1265,15 +1301,19 @@ function update(dt) {
       const phase = door.phase || 'opening';
 
       if (phase === 'opening') {
-        door.openAnim = Math.min(1, door.openAnim + dt * 2);
+        // Ease-in-out opening: fast in the middle, slower at start/end
+        const easedDt = dt * 3.2;
+        door.openAnim = Math.min(1, door.openAnim + easedDt);
         if (door.openAnim >= 1) {
           door.phase = 'hold';
-          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 2;
+          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 2.5;
+          door.openFlash = 0.3; // brief visual flash on fully opened
         }
       } else if (phase === 'hold') {
+        if (door.openFlash > 0) door.openFlash = Math.max(0, door.openFlash - dt);
         if (!door.locked) {
-          if (dist < TILE * 2) {
-            door.holdTimer = 2; // reset hold timer while player is nearby
+          if (dist < TILE * 2.2) {
+            door.holdTimer = 2.5; // reset hold timer while player is nearby
           } else {
             door.holdTimer -= dt;
             if (door.holdTimer <= 0) {
@@ -1282,7 +1322,7 @@ function update(dt) {
           }
         }
       } else if (phase === 'closing') {
-        door.openAnim = Math.max(0, door.openAnim - dt * 2);
+        door.openAnim = Math.max(0, door.openAnim - dt * 2.5);
         if (door.openAnim <= 0) {
           door.open = false;
           door.phase = 'closed';
@@ -1414,6 +1454,10 @@ function drawGrid(camera) {
       const sx = tileWorldX - camera.x + canvas.width / 2;
       const sy = tileWorldY - camera.y + canvas.height / 2;
 
+      // Deterministic hash per tile for random decoration variety
+      const hash = ((gx * 2654435761 + gy * 2246822519 + game.mapIndex * 1234567) >>> 0);
+      const tileVariant = hash % 100;
+
       const baseShade = (gx + gy + game.mapIndex) % 2 === 0 ? theme.floorBase[0] : theme.floorBase[1];
       ctx.fillStyle = baseShade;
       ctx.fillRect(sx, sy, TILE, TILE);
@@ -1425,14 +1469,110 @@ function drawGrid(camera) {
       ctx.fillStyle = floorGrad;
       ctx.fillRect(sx, sy, TILE, TILE);
 
+      // Scuff / wear overlay on some tiles
+      if (tileVariant < 18) {
+        const wearAlpha = 0.04 + (hash % 10) * 0.006;
+        ctx.fillStyle = `rgba(0, 0, 0, ${wearAlpha.toFixed(3)})`;
+        const wx = sx + (hash % 20) + 8;
+        const wy = sy + ((hash >> 4) % 20) + 8;
+        ctx.fillRect(wx, wy, TILE - 20, TILE - 20);
+      }
+
+      // Floor vent grate (every ~20 tiles, selected by hash)
+      if (tileVariant >= 88 && tileVariant < 95) {
+        const vx = sx + TILE * 0.18;
+        const vy = sy + TILE * 0.22;
+        const vw = TILE * 0.64;
+        const vh = TILE * 0.56;
+        ctx.fillStyle = 'rgba(10, 15, 22, 0.55)';
+        ctx.fillRect(vx, vy, vw, vh);
+        ctx.strokeStyle = 'rgba(80, 110, 140, 0.7)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(vx, vy, vw, vh);
+        // Vent slats
+        ctx.fillStyle = 'rgba(50, 75, 100, 0.6)';
+        const slats = 5;
+        for (let s = 0; s < slats; s++) {
+          ctx.fillRect(vx + 2, vy + 3 + s * (vh - 4) / slats, vw - 4, (vh - 4) / slats * 0.45);
+        }
+        // Vent glow (animated)
+        const vGlow = Math.sin(performance.now() * 0.002 + hash) * 0.5 + 0.5;
+        ctx.fillStyle = `rgba(60, 180, 255, ${(vGlow * 0.12).toFixed(3)})`;
+        ctx.fillRect(vx + 2, vy + 2, vw - 4, vh - 4);
+      }
+
+      // Drain cover tile
+      if (tileVariant >= 95) {
+        const cx = sx + TILE / 2;
+        const cy = sy + TILE / 2;
+        ctx.fillStyle = 'rgba(10, 14, 20, 0.5)';
+        ctx.beginPath(); ctx.arc(cx, cy, TILE * 0.28, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(70, 100, 130, 0.65)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(cx, cy, TILE * 0.28, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, TILE * 0.14, 0, Math.PI * 2); ctx.stroke();
+        // Cross lines
+        ctx.beginPath();
+        ctx.moveTo(cx - TILE * 0.25, cy); ctx.lineTo(cx + TILE * 0.25, cy);
+        ctx.moveTo(cx, cy - TILE * 0.25); ctx.lineTo(cx, cy + TILE * 0.25);
+        ctx.stroke();
+      }
+
+      // Floor hazard stripe (diagonal, near map edges or specific areas)
+      if (tileVariant >= 78 && tileVariant < 84) {
+        const stripeW = 7;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(sx + 4, sy + 4, TILE - 8, TILE - 8);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(220, 180, 30, 0.12)';
+        for (let s = -TILE; s < TILE * 2; s += stripeW * 2.4) {
+          ctx.beginPath();
+          ctx.moveTo(sx + s, sy);
+          ctx.lineTo(sx + s + TILE, sy + TILE);
+          ctx.lineTo(sx + s + TILE + stripeW, sy + TILE);
+          ctx.lineTo(sx + s + stripeW, sy);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(200, 160, 20, 0.22)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(sx + 4, sy + 4, TILE - 8, TILE - 8);
+      }
+
+      // Scorch/burn mark
+      if (tileVariant >= 84 && tileVariant < 88) {
+        const scx = sx + TILE * 0.3 + (hash % 12);
+        const scy = sy + TILE * 0.3 + ((hash >> 3) % 12);
+        const scr = TILE * 0.22;
+        const scorch = ctx.createRadialGradient(scx, scy, 0, scx, scy, scr);
+        scorch.addColorStop(0, 'rgba(20, 10, 5, 0.55)');
+        scorch.addColorStop(0.6, 'rgba(40, 20, 10, 0.25)');
+        scorch.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = scorch;
+        ctx.beginPath(); ctx.arc(scx, scy, scr, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Standard panel lines
       const pulse = ((gx * 17 + gy * 11 + Math.floor(performance.now() * 0.004)) % 12) / 12;
       ctx.fillStyle = theme.lineColor.replace('0.11', (0.06 + pulse * 0.05).toFixed(3)).replace('0.12', (0.06 + pulse * 0.05).toFixed(3));
       ctx.fillRect(sx + 6, sy + 6, TILE - 12, 1.7);
       ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.4);
 
+      // Panel seam lines (vary layout by row/col)
       ctx.fillStyle = theme.panelColor;
-      ctx.fillRect(sx + TILE * 0.28, sy + TILE * 0.18, TILE * 0.44, 2);
-      ctx.fillRect(sx + TILE * 0.18, sy + TILE * 0.72, TILE * 0.64, 1.5);
+      if ((gx + gy) % 3 === 0) {
+        ctx.fillRect(sx + TILE * 0.14, sy + TILE * 0.18, TILE * 0.72, 2);
+        ctx.fillRect(sx + TILE * 0.14, sy + TILE * 0.72, TILE * 0.72, 1.5);
+        ctx.fillRect(sx + TILE * 0.14, sy + TILE * 0.45, TILE * 0.35, 1.5);
+      } else if ((gx + gy) % 3 === 1) {
+        ctx.fillRect(sx + TILE * 0.28, sy + TILE * 0.18, TILE * 0.44, 2);
+        ctx.fillRect(sx + TILE * 0.18, sy + TILE * 0.72, TILE * 0.64, 1.5);
+      } else {
+        ctx.fillRect(sx + TILE * 0.2, sy + TILE * 0.3, TILE * 0.6, 1.8);
+        ctx.fillRect(sx + TILE * 0.2, sy + TILE * 0.6, TILE * 0.6, 1.5);
+        ctx.fillRect(sx + TILE * 0.5, sy + TILE * 0.3, 1.5, TILE * 0.3);
+      }
 
       ctx.fillStyle = theme.boltColor;
       ctx.beginPath();
@@ -1524,79 +1664,157 @@ function drawKeyPickup(x, y) {
 }
 
 function drawDoorPanel(x, y, w, h, locked) {
-  // door base - wood grain
-  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-  gradient.addColorStop(0, '#5a3a1a');
-  gradient.addColorStop(0.5, '#8b5e2f');
-  gradient.addColorStop(1, '#5a3a1a');
+  const isVert = h > w;
+  const t = performance.now() * 0.001;
+
+  // Sci-fi metal base
+  const gradient = ctx.createLinearGradient(x, y, isVert ? x + w : x, isVert ? y : y + h);
+  gradient.addColorStop(0, '#1e2c3a');
+  gradient.addColorStop(0.25, '#2e4259');
+  gradient.addColorStop(0.5, '#3a5470');
+  gradient.addColorStop(0.75, '#2e4259');
+  gradient.addColorStop(1, '#1a2535');
   ctx.fillStyle = gradient;
   ctx.fillRect(x, y, w, h);
 
-  // frame
-  ctx.strokeStyle = '#d4a44a';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
-
-  // lock indicator for locked doors
-  if (locked) {
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(cx - 5, cy - 3, 10, 8);
-    ctx.strokeStyle = '#ffd740';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(cx - 5, cy - 3, 10, 8);
-    ctx.beginPath();
-    ctx.arc(cx, cy - 3, 3.5, Math.PI, 0);
-    ctx.stroke();
-    ctx.fillStyle = '#ffd740';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
-    ctx.fill();
+  // Edge highlight strips (metallic sheen)
+  ctx.fillStyle = 'rgba(100, 160, 220, 0.28)';
+  if (isVert) {
+    ctx.fillRect(x, y, 3, h);
+    ctx.fillRect(x + w - 3, y, 3, h);
+  } else {
+    ctx.fillRect(x, y, w, 3);
+    ctx.fillRect(x, y + h - 3, w, 3);
   }
 
-  // cross bars for reinforced look
-  ctx.strokeStyle = 'rgba(180, 140, 60, 0.5)';
-  ctx.lineWidth = 1.5;
-  const longDim = Math.max(w, h);
-  if (h > w) {
-    for (let stripe = y + 8; stripe < y + h - 4; stripe += 12) {
-      ctx.beginPath();
-      ctx.moveTo(x + 2, stripe);
-      ctx.lineTo(x + w - 2, stripe);
-      ctx.stroke();
+  // Horizontal/vertical reinforcement ribs
+  ctx.fillStyle = 'rgba(60, 100, 140, 0.55)';
+  if (isVert) {
+    const ribSpacing = 14;
+    for (let ry = y + ribSpacing; ry < y + h - 4; ry += ribSpacing) {
+      ctx.fillRect(x + 2, ry, w - 4, 1.5);
     }
   } else {
-    for (let stripe = x + 8; stripe < x + w - 4; stripe += 12) {
-      ctx.beginPath();
-      ctx.moveTo(stripe, y + 2);
-      ctx.lineTo(stripe, y + h - 2);
-      ctx.stroke();
+    const ribSpacing = 14;
+    for (let rx = x + ribSpacing; rx < x + w - 4; rx += ribSpacing) {
+      ctx.fillRect(rx, y + 2, 1.5, h - 4);
     }
   }
+
+  // Corner rivets
+  const rv = 2.8;
+  ctx.fillStyle = 'rgba(140, 190, 240, 0.6)';
+  [[x + 5, y + 5], [x + w - 5, y + 5], [x + 5, y + h - 5], [x + w - 5, y + h - 5]].forEach(([rx, ry]) => {
+    ctx.beginPath(); ctx.arc(rx, ry, rv, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(200, 230, 255, 0.4)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  });
+
+  // Status indicator light
+  const lightX = x + w / 2;
+  const lightY = isVert ? y + 10 : y + h / 2;
+  const pulse = Math.sin(t * (locked ? 2.5 : 4)) * 0.5 + 0.5;
+  const lightCol = locked ? `rgba(255, 60, 40, ${0.7 + pulse * 0.3})` : `rgba(40, 255, 110, ${0.7 + pulse * 0.3})`;
+  const glowCol = locked ? 'rgba(255, 40, 20, 0.55)' : 'rgba(30, 255, 90, 0.45)';
+
+  // Status glow halo
+  const halo = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, 9);
+  halo.addColorStop(0, glowCol);
+  halo.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(lightX, lightY, 9, 0, Math.PI * 2); ctx.fill();
+
+  // Light dot
+  ctx.fillStyle = lightCol;
+  ctx.beginPath(); ctx.arc(lightX, lightY, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = locked ? '#ff9988' : '#88ffcc';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  // Lock symbol if locked
+  if (locked) {
+    const lx = x + w / 2;
+    const ly = isVert ? y + h * 0.35 : y + h / 2 + 9;
+    ctx.strokeStyle = 'rgba(255, 200, 80, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(lx, ly - 2, 3.5, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 190, 60, 0.8)';
+    ctx.fillRect(lx - 4.5, ly, 9, 7);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath(); ctx.arc(lx, ly + 3.5, 1.8, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Outer frame line
+  ctx.strokeStyle = 'rgba(80, 130, 180, 0.7)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 }
 
-function drawDoor(sx, sy, tw, th, door, theme) {
-  const thickness = 14;
+function drawDoor(sx, sy, tw, th, door, theme, playerNear) {
+  const thickness = 16;
   const swingProgress = door.openAnim || 0;
-  const angle = swingProgress * (Math.PI * 0.45) * (door.swingDir || 1);
+  // Full 90° swing for realistic door movement
+  const angle = swingProgress * (Math.PI * 0.5) * (door.swingDir || 1);
+  const t = performance.now() * 0.001;
 
-  // always draw door frame (the archway remains visible)
+  // Frame glow intensity: stronger when player is nearby or door is opening
+  const nearGlow = playerNear ? 1.0 : 0.45;
+  const openingBoost = swingProgress > 0 && swingProgress < 1 ? 0.4 : 0;
+  const glowIntensity = Math.min(1, nearGlow + openingBoost);
+
+  // Color theme: red for locked, blue-cyan for unlocked
+  const frameR = door.locked ? 210 : 60;
+  const frameG = door.locked ? 60 : 160;
+  const frameB = door.locked ? 50 : 230;
+  const frameAlpha = (0.5 + glowIntensity * 0.45).toFixed(2);
+
   ctx.save();
-  ctx.strokeStyle = '#d4a44a';
-  ctx.lineWidth = 3;
+
+  // Outer glow halo on frame
+  if (glowIntensity > 0.2) {
+    ctx.shadowBlur = 10 + glowIntensity * 14;
+    ctx.shadowColor = `rgba(${frameR}, ${frameG}, ${frameB}, ${(glowIntensity * 0.7).toFixed(2)})`;
+  }
+
+  // Door frame border
+  ctx.strokeStyle = `rgba(${frameR}, ${frameG}, ${frameB}, ${frameAlpha})`;
+  ctx.lineWidth = 2.5;
   ctx.strokeRect(sx + 1, sy + 1, tw - 2, th - 2);
-  // frame corner accents
-  ctx.fillStyle = '#b8882e';
-  const cs = 5;
+  ctx.shadowBlur = 0;
+
+  // Frame inner edge (dark inset)
+  ctx.strokeStyle = 'rgba(10, 18, 28, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(sx + 3, sy + 3, tw - 6, th - 6);
+
+  // Corner accent squares
+  const cs = 7;
+  const cornerCol = door.locked ? '#c03028' : '#2a9ad4';
+  ctx.fillStyle = cornerCol;
   ctx.fillRect(sx, sy, cs, cs);
   ctx.fillRect(sx + tw - cs, sy, cs, cs);
   ctx.fillRect(sx, sy + th - cs, cs, cs);
   ctx.fillRect(sx + tw - cs, sy + th - cs, cs, cs);
+
+  // Corner diagonal cut (chamfer look)
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(sx + 1, sy + 1, cs - 2, 2);
+  ctx.fillRect(sx + tw - cs + 1, sy + 1, cs - 2, 2);
+
+  // Hinge pins
+  ctx.fillStyle = 'rgba(160, 190, 220, 0.55)';
+  if ((door.orientation || 'v') === 'v') {
+    ctx.beginPath(); ctx.arc(sx + tw / 2, sy + 5, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx + tw / 2, sy + th - 5, 3, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.arc(sx + 5, sy + th / 2, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx + tw - 5, sy + th / 2, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
   ctx.restore();
 
-  // always draw the swinging panel — visible at all stages (open, hold, closing)
-
+  // Swinging door panel
   ctx.save();
 
   if ((door.orientation || 'v') === 'v') {
@@ -1605,6 +1823,11 @@ function drawDoor(sx, sy, tw, th, door, theme) {
     const hingeY = sy;
     ctx.translate(hingeX, hingeY);
     ctx.rotate(angle);
+    // Cast shadow while swinging open
+    if (swingProgress > 0.05) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(-thickness / 2 + 4, 2, thickness, th);
+    }
     drawDoorPanel(-thickness / 2, 0, thickness, th, door.locked);
   } else {
     // horizontal wall door: panel is wide and thin, swings around left hinge
@@ -1612,6 +1835,10 @@ function drawDoor(sx, sy, tw, th, door, theme) {
     const hingeY = sy + th / 2;
     ctx.translate(hingeX, hingeY);
     ctx.rotate(angle);
+    if (swingProgress > 0.05) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(2, -thickness / 2 + 4, tw, thickness);
+    }
     drawDoorPanel(0, -thickness / 2, tw, thickness, door.locked);
   }
 
@@ -1632,6 +1859,12 @@ function drawMapFeatures(camera) {
       case 'server-racks': drawServerRacks(s.x, s.y); break;
       case 'reactor-core': drawReactorCore(s.x, s.y); break;
       case 'coolant-pipes': drawCoolantPipes(s.x, s.y); break;
+      case 'storage-crates': drawStorageCrates(s.x, s.y, feature.seed || 0); break;
+      case 'wall-console': drawWallConsole(s.x, s.y, feature.variant || 0); break;
+      case 'wall-locker': drawWallLocker(s.x, s.y); break;
+      case 'sparking-panel': drawSparkingPanel(s.x, s.y); break;
+      case 'floor-grate': drawFloorGrate(s.x, s.y); break;
+      case 'fuel-barrel': drawFuelBarrel(s.x, s.y, feature.seed || 0); break;
     }
   }
 }
@@ -1876,6 +2109,267 @@ function drawCoolantPipes(x, y) {
   ctx.restore();
 }
 
+// ===== DECORATION FEATURES =====
+
+function drawStorageCrates(x, y, seed) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // Arrange 3-4 crates in a cluster
+  const layout = [[-22, -18], [10, -22], [-8, 8], [18, 4]];
+  const sizes = [28, 24, 26, 20];
+  for (let i = 0; i < layout.length; i++) {
+    const [cx, cy] = layout[i];
+    const sz = sizes[i];
+    const h = sz;
+    // Crate body
+    const crateGrad = ctx.createLinearGradient(cx, cy, cx + sz, cy + h);
+    crateGrad.addColorStop(0, '#3a4a5a');
+    crateGrad.addColorStop(0.6, '#2c3a48');
+    crateGrad.addColorStop(1, '#1e2a35');
+    ctx.fillStyle = crateGrad;
+    ctx.fillRect(cx, cy, sz, h);
+    // Top edge highlight
+    ctx.fillStyle = 'rgba(130, 170, 210, 0.3)';
+    ctx.fillRect(cx, cy, sz, 3);
+    ctx.fillRect(cx, cy, 3, h);
+    // Corner bolts
+    ctx.fillStyle = 'rgba(180, 200, 220, 0.5)';
+    ctx.beginPath(); ctx.arc(cx + 4, cy + 4, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + sz - 4, cy + 4, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 4, cy + h - 4, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + sz - 4, cy + h - 4, 2, 0, Math.PI * 2); ctx.fill();
+    // Stenciled stripe
+    ctx.fillStyle = 'rgba(220, 180, 40, 0.2)';
+    ctx.fillRect(cx + 3, cy + h * 0.35, sz - 6, h * 0.3);
+    // Frame border
+    ctx.strokeStyle = 'rgba(80, 120, 160, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx, cy, sz, h);
+  }
+  // Cast shadow under cluster
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath(); ctx.ellipse(4, 24, 38, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawWallConsole(x, y, variant) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+
+  // Console body
+  const bodyGrad = ctx.createLinearGradient(-24, -36, 24, 36);
+  bodyGrad.addColorStop(0, '#1e2c3a');
+  bodyGrad.addColorStop(1, '#121c26');
+  ctx.fillStyle = bodyGrad;
+  ctx.fillRect(-24, -36, 48, 52);
+
+  // Screen
+  const screenCol = variant === 1 ? '#ff8833' : variant === 2 ? '#88ff44' : '#22ddff';
+  const screenPulse = Math.sin(t * 1.5 + variant) * 0.5 + 0.5;
+  ctx.fillStyle = `rgba(5, 12, 20, 0.9)`;
+  ctx.fillRect(-18, -30, 36, 26);
+  // Screen content glow
+  const screenGlow = ctx.createLinearGradient(-18, -30, -18, -4);
+  screenGlow.addColorStop(0, screenCol.replace(')', `, ${(0.15 + screenPulse * 0.1).toFixed(2)})`).replace('rgb', 'rgba').replace('#22ddff', `rgba(34, 221, 255, ${(0.15 + screenPulse * 0.1).toFixed(2)})`).replace('#ff8833', `rgba(255, 136, 51, ${(0.15 + screenPulse * 0.1).toFixed(2)})`).replace('#88ff44', `rgba(136, 255, 68, ${(0.15 + screenPulse * 0.1).toFixed(2)})`));
+  screenGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = screenGlow;
+  ctx.fillRect(-18, -30, 36, 26);
+  // Scanlines
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  for (let sl = -30; sl < -4; sl += 3) ctx.fillRect(-18, sl, 36, 1);
+  // Readout lines (text simulation)
+  ctx.fillStyle = screenCol;
+  ctx.globalAlpha = 0.7 + screenPulse * 0.3;
+  const lineW = [28, 20, 24, 16, 22];
+  for (let li = 0; li < 5; li++) {
+    ctx.fillRect(-15, -27 + li * 5, lineW[li], 2);
+  }
+  ctx.globalAlpha = 1;
+  // Screen border
+  ctx.strokeStyle = 'rgba(80, 140, 200, 0.6)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-18, -30, 36, 26);
+
+  // Button row
+  const btnColors = ['#ff4444', '#44ff88', '#ffdd22', '#4488ff'];
+  for (let b = 0; b < 4; b++) {
+    const bx = -16 + b * 10;
+    const by = 2;
+    ctx.fillStyle = btnColors[b];
+    ctx.globalAlpha = 0.6 + (Math.sin(t * 2 + b * 1.3) * 0.5 + 0.5) * 0.35;
+    ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  // Frame
+  ctx.strokeStyle = 'rgba(70, 110, 150, 0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-24, -36, 48, 52);
+  // Mounting bracket
+  ctx.fillStyle = 'rgba(40, 60, 80, 0.8)';
+  ctx.fillRect(-6, 16, 12, 8);
+  ctx.strokeStyle = 'rgba(80, 120, 160, 0.5)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-6, 16, 12, 8);
+
+  ctx.restore();
+}
+
+function drawWallLocker(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // 3 lockers side by side
+  for (let i = 0; i < 3; i++) {
+    const lx = -30 + i * 22;
+    const lockerGrad = ctx.createLinearGradient(lx, -32, lx + 20, 32);
+    lockerGrad.addColorStop(0, '#2e3e50');
+    lockerGrad.addColorStop(0.5, '#3a5068');
+    lockerGrad.addColorStop(1, '#22303f');
+    ctx.fillStyle = lockerGrad;
+    ctx.fillRect(lx, -32, 20, 64);
+    // Door line
+    ctx.strokeStyle = 'rgba(50, 80, 110, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(lx, -32, 20, 64);
+    // Vent slots at top
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    for (let v = 0; v < 4; v++) ctx.fillRect(lx + 4, -28 + v * 5, 12, 2);
+    // Handle
+    ctx.fillStyle = 'rgba(160, 190, 220, 0.55)';
+    ctx.fillRect(lx + 8, 0, 4, 10);
+    // Status light
+    const active = (Math.floor(t + i) % 4 === 0);
+    ctx.fillStyle = active ? '#ff6644' : '#334455';
+    ctx.beginPath(); ctx.arc(lx + 10, -20, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  // Floor shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath(); ctx.ellipse(0, 34, 34, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawSparkingPanel(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // Damaged wall panel
+  ctx.fillStyle = '#1a2535';
+  ctx.fillRect(-28, -28, 56, 40);
+  // Broken panel lines
+  ctx.strokeStyle = 'rgba(60, 90, 120, 0.7)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-28, -28, 56, 40);
+  // Crack lines
+  ctx.strokeStyle = 'rgba(200, 220, 240, 0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-10, -20); ctx.lineTo(4, -5); ctx.lineTo(-2, 8); ctx.lineTo(12, 16);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(8, -22); ctx.lineTo(-4, -10);
+  ctx.stroke();
+  // Sparks (animated)
+  const sparkPhase = (t * 3) % 1;
+  if (sparkPhase < 0.5) {
+    const sparkCount = 5 + Math.floor(Math.sin(t * 7) * 3);
+    for (let s = 0; s < sparkCount; s++) {
+      const sa = ((t * 4 + s * 0.6) % 1) * Math.PI * 2;
+      const sr = 8 + Math.sin(t * 5 + s) * 6;
+      const sx2 = Math.cos(sa) * sr * 0.6;
+      const sy2 = Math.sin(sa) * sr * 0.4 - 8;
+      const sparkAlpha = Math.random() > 0.3 ? 0.9 : 0.3;
+      ctx.fillStyle = `rgba(255, ${180 + Math.floor(Math.random() * 75)}, 30, ${sparkAlpha})`;
+      ctx.beginPath(); ctx.arc(sx2, sy2, 1.5 + Math.random() * 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // Flash glow
+    const flashGrd = ctx.createRadialGradient(0, -8, 0, 0, -8, 22);
+    flashGrd.addColorStop(0, `rgba(255, 200, 80, ${sparkPhase < 0.1 ? 0.35 : 0.1})`);
+    flashGrd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = flashGrd;
+    ctx.beginPath(); ctx.arc(0, -8, 22, 0, Math.PI * 2); ctx.fill();
+  }
+  // Warning stripe on damaged area
+  ctx.fillStyle = 'rgba(220, 160, 20, 0.18)';
+  ctx.fillRect(-24, -24, 48, 8);
+  ctx.restore();
+}
+
+function drawFloorGrate(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  const sz = 52;
+  // Grate surround
+  ctx.fillStyle = 'rgba(18, 26, 36, 0.85)';
+  ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+  ctx.strokeStyle = 'rgba(70, 110, 150, 0.7)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-sz / 2, -sz / 2, sz, sz);
+  // Grate bars
+  ctx.fillStyle = 'rgba(40, 65, 90, 0.85)';
+  const bars = 7;
+  for (let b = 0; b < bars; b++) {
+    const bx = -sz / 2 + 4 + b * (sz - 8) / bars;
+    ctx.fillRect(bx, -sz / 2 + 3, (sz - 8) / bars * 0.45, sz - 6);
+  }
+  for (let b = 0; b < bars; b++) {
+    const by = -sz / 2 + 4 + b * (sz - 8) / bars;
+    ctx.fillRect(-sz / 2 + 3, by, sz - 6, (sz - 8) / bars * 0.45);
+  }
+  // Glow from below (animated)
+  const glowPulse = Math.sin(t * 1.4) * 0.5 + 0.5;
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, sz / 2);
+  glow.addColorStop(0, `rgba(30, 160, 255, ${(0.08 + glowPulse * 0.1).toFixed(3)})`);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, sz / 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawFuelBarrel(x, y, seed) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // 1-3 barrels based on seed
+  const count = 1 + (seed % 3);
+  const offsets = [[-12, 0], [10, -6], [-2, 10]];
+  for (let i = 0; i < count; i++) {
+    const [bx, by] = offsets[i];
+    // Barrel body
+    const barrelGrad = ctx.createLinearGradient(bx - 10, by - 18, bx + 10, by + 18);
+    barrelGrad.addColorStop(0, '#4a3020');
+    barrelGrad.addColorStop(0.5, '#6a4428');
+    barrelGrad.addColorStop(1, '#3a2015');
+    ctx.fillStyle = barrelGrad;
+    ctx.beginPath();
+    ctx.ellipse(bx, by + 16, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(bx - 10, by - 16, 20, 32);
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 16, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
+    // Bands
+    ctx.strokeStyle = 'rgba(100, 60, 20, 0.8)';
+    ctx.lineWidth = 2;
+    [-8, 0, 8].forEach(bh => {
+      ctx.beginPath();
+      ctx.ellipse(bx, by + bh, 10, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
+    });
+    // Hazard label
+    ctx.fillStyle = 'rgba(220, 160, 20, 0.7)';
+    ctx.fillRect(bx - 7, by - 5, 14, 10);
+    ctx.fillStyle = 'rgba(20, 10, 5, 0.8)';
+    ctx.fillRect(bx - 4, by - 2, 8, 4);
+    // Highlight
+    ctx.fillStyle = 'rgba(200, 160, 100, 0.25)';
+    ctx.fillRect(bx - 9, by - 14, 4, 28);
+  }
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath(); ctx.ellipse(-2, 22, 22 + count * 4, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function drawExitStairs(x, y) {
   ctx.save();
   ctx.translate(x, y);
@@ -2006,7 +2500,10 @@ function draw() {
   // draw doors (swing-open style)
   for (const door of game.doors) {
     const ds = worldToScreen(door.x * TILE, door.y * TILE, camera);
-    drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door, theme);
+    const doorCX = (door.x + door.w / 2) * TILE;
+    const doorCY = (door.y + door.h / 2) * TILE;
+    const playerNear = Math.hypot(game.player.x - doorCX, game.player.y - doorCY) < TILE * 2.5;
+    drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door, theme, playerNear);
   }
 
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);

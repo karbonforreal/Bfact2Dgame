@@ -16,6 +16,77 @@ const HUMANOID_VARIANTS = [
   { skin: '#6b452f', shirt: '#f3c36c', pants: '#343047', hair: '#101010' }
 ];
 
+const CHARACTER_DEFS = [
+  {
+    id: 'vanguard',
+    name: 'VANGUARD',
+    title: 'Heavy Assault',
+    desc: 'Armored tank with heavy plating. Built to absorb punishment so others don\'t have to.',
+    hp: 130,
+    maxHp: 130,
+    armor: 70,
+    maxArmor: 100,
+    speed: 240,
+    skin: '#d8a87f',
+    skinDark: '#b07850',
+    shirt: '#4a6a30',
+    shirtDark: '#2d4a1a',
+    pants: '#3a5230',
+    boots: '#1e2818',
+    hair: '#2a1a0a',
+    hasHelmet: true,
+    helmetColor: '#3d5a28',
+    helmetDark: '#263819',
+    accentColor: '#8bc34a',
+    glowColor: 'rgba(139,195,74,0.35)'
+  },
+  {
+    id: 'phantom',
+    name: 'PHANTOM',
+    title: 'Cyber Operative',
+    desc: 'Balanced fighter with cybernetic augmentations. Reliable in any combat scenario.',
+    hp: 100,
+    maxHp: 100,
+    armor: 40,
+    maxArmor: 100,
+    speed: 280,
+    skin: '#ffd0aa',
+    skinDark: '#d49f77',
+    shirt: '#73ccff',
+    shirtDark: '#3c9dd0',
+    pants: '#365786',
+    boots: '#1b2532',
+    hair: '#5f3f2a',
+    hasHelmet: false,
+    accentColor: '#7ce6ff',
+    glowColor: 'rgba(124,230,255,0.35)'
+  },
+  {
+    id: 'ghost',
+    name: 'GHOST',
+    title: 'Shadow Infiltrator',
+    desc: 'Lightning-fast assassin. Fragile under fire but devastatingly quick to strike.',
+    hp: 80,
+    maxHp: 80,
+    armor: 0,
+    maxArmor: 100,
+    speed: 340,
+    skin: '#c8a088',
+    skinDark: '#a07858',
+    shirt: '#141420',
+    shirtDark: '#0a0a0e',
+    pants: '#0c0c18',
+    boots: '#060608',
+    hair: '#e0e0f0',
+    hasHelmet: false,
+    hasHood: true,
+    hoodColor: '#0a0a16',
+    hoodDark: '#050508',
+    accentColor: '#ff6b9d',
+    glowColor: 'rgba(255,107,157,0.35)'
+  }
+];
+
 const WEAPONS = {
   blaster: {
     name: 'Blaster',
@@ -210,17 +281,16 @@ const maps = [
       { type: 'server-racks', x: 26, y: 3.5 }
     ],
     enemies: [
-      { x: 16, y: 3, hp: 70 },
-      { x: 26, y: 5, hp: 80, type: 'shield' },
-      { x: 5, y: 11, hp: 70 },
-      { x: 27, y: 11, hp: 80, type: 'flanker' },
-      { x: 16, y: 9, hp: 75 },
-      { x: 5, y: 18, hp: 55, type: 'dog' },
-      { x: 16, y: 18, hp: 55, type: 'dog' }
+      { x: 17, y: 5, hp: 65 },
+      { x: 26, y: 5, hp: 75, type: 'shield' },
+      { x: 5, y: 11, hp: 65 },
+      { x: 16, y: 9, hp: 70 },
+      { x: 5, y: 18, hp: 50, type: 'dog' }
     ],
     pickups: [
       { x: 2.5, y: 18.5, type: 'ammo-blaster', value: 20 },
       { x: 26.5, y: 1.5, type: 'health', value: 25 },
+      { x: 7.5, y: 4.5, type: 'health', value: 20 },
       { x: 16.5, y: 13.5, type: 'ammo-shotgun', value: 4 },
       { x: 6.5, y: 9.5, type: 'armor', value: 25 }
     ],
@@ -294,6 +364,8 @@ const maps = [
 const game = {
   running: true,
   paused: false,
+  state: 'character-select',
+  charSelectHover: -1,
   lastTime: performance.now(),
   wins: 0,
   losses: 0,
@@ -401,7 +473,7 @@ function startMap(index, keepPlayerState = true) {
 
   const prev = game.player;
   const hp = keepPlayerState ? Math.max(prev.hp, 30) : prev.maxHp;
-  const armor = keepPlayerState ? prev.armor : 40;
+  const armor = keepPlayerState ? prev.armor : (prev.charDef ? prev.charDef.armor : 40);
 
   const playerSpawn = findNearestOpenPoint(map.spawn.x * TILE, map.spawn.y * TILE, PLAYER_RADIUS);
 
@@ -512,7 +584,7 @@ function resetRun(lostRound = false) {
   game.killCount = 0;
   game.hasKey = false;
   game.player.hp = game.player.maxHp;
-  game.player.armor = 40;
+  game.player.armor = game.player.charDef ? game.player.charDef.armor : 40;
   game.player.ammo.blaster = { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo };
   game.player.ammo.shotgun = { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo };
   game.player.ammo.sniper = { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo };
@@ -961,6 +1033,8 @@ function reloadWeapon() {
 }
 
 function update(dt) {
+  if (game.state === 'character-select') return;
+
   const p = game.player;
 
   if (!game.running || game.paused) return;
@@ -1835,6 +1909,11 @@ function drawHealthPickupIcon(x, y) {
 }
 
 function draw() {
+  if (game.state === 'character-select') {
+    drawCharacterSelectScreen();
+    return;
+  }
+
   const p = game.player;
   const camera = { x: p.x, y: p.y };
 
@@ -2004,14 +2083,326 @@ function draw() {
   }
 }
 
+function csRoundRect(cx, cy, cw, ch, r) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  cw = Math.round(cw); ch = Math.round(ch);
+  r = Math.min(r, cw / 2, ch / 2);
+  ctx.beginPath();
+  ctx.moveTo(cx + r, cy);
+  ctx.lineTo(cx + cw - r, cy);
+  ctx.arcTo(cx + cw, cy, cx + cw, cy + r, r);
+  ctx.lineTo(cx + cw, cy + ch - r);
+  ctx.arcTo(cx + cw, cy + ch, cx + cw - r, cy + ch, r);
+  ctx.lineTo(cx + r, cy + ch);
+  ctx.arcTo(cx, cy + ch, cx, cy + ch - r, r);
+  ctx.lineTo(cx, cy + r);
+  ctx.arcTo(cx, cy, cx + r, cy, r);
+  ctx.closePath();
+}
+
+function csWrapText(text, cx, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  const lines = [];
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawCharacterSprite(cd, cx, cy, sc) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(sc, sc);
+
+  // Legs
+  ctx.fillStyle = cd.pants;
+  ctx.fillRect(-9, 7, 7, 15);
+  ctx.fillRect(2, 7, 7, 15);
+  // Boots
+  ctx.fillStyle = cd.boots;
+  ctx.fillRect(-10, 22, 9, 3);
+  ctx.fillRect(1, 22, 9, 3);
+
+  // Torso
+  const tg = ctx.createLinearGradient(-10, -4, 10, 14);
+  tg.addColorStop(0, cd.shirt);
+  tg.addColorStop(1, cd.shirtDark);
+  ctx.fillStyle = tg;
+  ctx.fillRect(-11, -4, 22, 15);
+
+  // Vanguard chest plate
+  if (cd.hasHelmet) {
+    ctx.fillStyle = cd.helmetColor;
+    ctx.fillRect(-9, -3, 18, 12);
+    ctx.fillStyle = cd.helmetDark;
+    ctx.fillRect(-7, -1, 14, 3);
+    ctx.fillStyle = cd.accentColor;
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(-3, 2, 6, 2);
+    ctx.globalAlpha = 1;
+  }
+
+  // Arms
+  ctx.fillStyle = cd.skin;
+  ctx.fillRect(-15, 0, 4, 10);
+  ctx.fillRect(11, 0, 4, 10);
+
+  // Head
+  if (cd.hasHelmet) {
+    ctx.fillStyle = cd.helmetColor;
+    ctx.fillRect(-9, -18, 18, 15);
+    ctx.fillStyle = cd.helmetDark;
+    ctx.fillRect(-7, -15, 14, 7);
+    ctx.fillStyle = 'rgba(180,255,100,0.6)';
+    ctx.fillRect(-6, -14, 12, 5);
+    ctx.fillStyle = cd.accentColor;
+    ctx.fillRect(-9, -4, 18, 2);
+  } else if (cd.hasHood) {
+    ctx.fillStyle = cd.hoodColor;
+    ctx.fillRect(-10, -19, 20, 16);
+    ctx.fillStyle = cd.hoodDark;
+    ctx.fillRect(-8, -17, 16, 7);
+    ctx.fillStyle = cd.skin;
+    ctx.fillRect(-5, -13, 10, 9);
+    ctx.fillStyle = cd.accentColor;
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(-4, -11, 3, 2.5);
+    ctx.fillRect(1, -11, 3, 2.5);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = cd.hoodColor;
+    ctx.fillRect(-10, -5, 20, 3);
+  } else {
+    const hg = ctx.createLinearGradient(-8, -16, 8, -4);
+    hg.addColorStop(0, cd.skin);
+    hg.addColorStop(1, cd.skinDark);
+    ctx.fillStyle = hg;
+    ctx.fillRect(-8, -16, 16, 13);
+    ctx.fillStyle = cd.hair;
+    ctx.fillRect(-8, -16, 16, 4);
+    ctx.fillStyle = '#15202a';
+    ctx.fillRect(-5, -10, 2.4, 2.2);
+    ctx.fillRect(2, -10, 2.4, 2.2);
+  }
+
+  // Weapon
+  ctx.fillStyle = '#1f344a';
+  ctx.fillRect(11, -1, 13, 4);
+  ctx.fillStyle = cd.accentColor;
+  ctx.fillRect(22, -0.5, 4, 2.5);
+
+  ctx.restore();
+}
+
+function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
+  ctx.save();
+
+  if (isHovered) {
+    ctx.shadowColor = cd.accentColor;
+    ctx.shadowBlur = 24;
+  }
+
+  csRoundRect(cardX, cardY, cardW, cardH, 10);
+  ctx.fillStyle = isHovered ? 'rgba(22,32,52,0.97)' : 'rgba(12,18,30,0.92)';
+  ctx.fill();
+  ctx.strokeStyle = isHovered ? cd.accentColor : 'rgba(100,140,180,0.28)';
+  ctx.lineWidth = isHovered ? 2 : 1;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Preview panel background
+  const prevH = Math.round(cardH * 0.44);
+  csRoundRect(cardX + 4, cardY + 4, cardW - 8, prevH, 7);
+  ctx.fillStyle = isHovered ? 'rgba(30,45,65,0.55)' : 'rgba(14,20,34,0.6)';
+  ctx.fill();
+
+  // Accent glow strip at top of card
+  csRoundRect(cardX + 4, cardY + 4, cardW - 8, 4, 3);
+  ctx.fillStyle = cd.accentColor;
+  ctx.globalAlpha = isHovered ? 0.8 : 0.35;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Character sprite
+  const spriteScale = Math.min(cardW, prevH) / 130;
+  drawCharacterSprite(cd, cardX + cardW / 2, cardY + prevH * 0.62, spriteScale);
+
+  // Name
+  const fs = Math.max(12, Math.round(cardW * 0.1));
+  ctx.fillStyle = isHovered ? cd.accentColor : '#c8dae8';
+  ctx.font = `bold ${fs}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(cd.name, cardX + cardW / 2, cardY + prevH + fs + 6);
+
+  // Title
+  const fsTitle = Math.max(10, Math.round(cardW * 0.072));
+  ctx.fillStyle = '#8899aa';
+  ctx.font = `${fsTitle}px monospace`;
+  ctx.fillText(cd.title, cardX + cardW / 2, cardY + prevH + fs + fsTitle + 10);
+
+  // Stats
+  const statsTop = cardY + prevH + fs + fsTitle + 20;
+  const barPad = Math.round(cardW * 0.1);
+  const barAvailW = cardW - barPad * 2;
+  const labelW = Math.round(barAvailW * 0.38);
+  const barX = cardX + barPad + labelW;
+  const barW2 = barAvailW - labelW;
+  const statH = 5;
+  const fsS = Math.max(9, Math.round(cardW * 0.065));
+
+  const stats = [
+    { label: 'HP', val: cd.hp, max: 130, color: '#7bff9f' },
+    { label: 'ARMOR', val: cd.armor, max: 70, color: '#7bf9ff' },
+    { label: 'SPEED', val: cd.speed - 200, max: 140, color: '#ffcc44' }
+  ];
+
+  stats.forEach((s, si) => {
+    const sy = statsTop + si * Math.round(cardH * 0.1);
+    ctx.fillStyle = '#6677aa';
+    ctx.font = `${fsS}px monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText(s.label, cardX + barPad, sy + statH);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(barX, sy, barW2, statH);
+    const fill = Math.round((s.val / s.max) * barW2);
+    ctx.fillStyle = s.color;
+    ctx.fillRect(barX, sy, fill, statH);
+  });
+
+  // Description
+  const descTop = statsTop + 3 * Math.round(cardH * 0.1) + 8;
+  ctx.fillStyle = '#667788';
+  const fsDesc = Math.max(9, Math.round(cardW * 0.065));
+  ctx.font = `${fsDesc}px monospace`;
+  ctx.textAlign = 'center';
+  const lines = csWrapText(cd.desc, cardX + cardW / 2, cardW - 24, fsDesc + 4);
+  lines.forEach((ln, li) => {
+    ctx.fillText(ln, cardX + cardW / 2, descTop + li * (fsDesc + 5));
+  });
+
+  // Select button
+  const btnH = Math.round(cardH * 0.1);
+  const btnY = cardY + cardH - btnH - 8;
+  const btnX = cardX + 10;
+  const btnW = cardW - 20;
+  csRoundRect(btnX, btnY, btnW, btnH, 5);
+  ctx.fillStyle = isHovered ? cd.accentColor : 'rgba(80,110,150,0.2)';
+  ctx.fill();
+  ctx.strokeStyle = isHovered ? cd.accentColor : 'rgba(100,140,180,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  const fsBtnLabel = Math.max(10, Math.round(cardW * 0.08));
+  ctx.fillStyle = isHovered ? '#000' : '#7788aa';
+  ctx.font = `bold ${fsBtnLabel}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(isHovered ? '[ SELECT ]' : 'SELECT', cardX + cardW / 2, btnY + btnH * 0.67);
+
+  ctx.restore();
+}
+
+function drawCharacterSelectScreen() {
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Background
+  ctx.fillStyle = '#070b12';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(80,130,200,0.05)';
+  ctx.lineWidth = 1;
+  const gs = 48;
+  for (let gx = 0; gx < W; gx += gs) {
+    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+  }
+  for (let gy = 0; gy < H; gy += gs) {
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  }
+
+  // Corner accents
+  const acLen = 36;
+  const acW = 2;
+  ctx.strokeStyle = 'rgba(120,200,255,0.25)';
+  ctx.lineWidth = acW;
+  [[0, 0, 1, 1], [W, 0, -1, 1], [0, H, 1, -1], [W, H, -1, -1]].forEach(([ox, oy, dx, dy]) => {
+    ctx.beginPath(); ctx.moveTo(ox + dx * 12, oy); ctx.lineTo(ox + dx * (12 + acLen), oy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox, oy + dy * 12); ctx.lineTo(ox, oy + dy * (12 + acLen)); ctx.stroke();
+  });
+
+  // Title
+  const titleSize = Math.max(20, Math.round(W * 0.028));
+  ctx.font = `bold ${titleSize}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('SELECT YOUR OPERATIVE', W / 2, H * 0.1);
+
+  // Subtitle
+  const subSize = Math.max(10, Math.round(W * 0.011));
+  ctx.font = `${subSize}px monospace`;
+  ctx.fillStyle = 'rgba(100,170,220,0.7)';
+  ctx.fillText('Choose wisely — each operative has unique strengths', W / 2, H * 0.1 + titleSize * 0.9);
+
+  // Cards
+  const gap = W * 0.028;
+  const cardW = Math.round((W * 0.82 - gap * 2) / 3);
+  const cardH = Math.round(H * 0.76);
+  const totalW = cardW * 3 + gap * 2;
+  const startX = Math.round((W - totalW) / 2);
+  const cardTop = Math.round(H * 0.17);
+
+  CHARACTER_DEFS.forEach((cd, i) => {
+    const cx = startX + i * (cardW + gap);
+    drawCharCard(cd, cx, cardTop, cardW, cardH, game.charSelectHover === i);
+  });
+}
+
+function getCharSelectCardBounds() {
+  const W = canvas.width;
+  const H = canvas.height;
+  const gap = W * 0.028;
+  const cardW = Math.round((W * 0.82 - gap * 2) / 3);
+  const cardH = Math.round(H * 0.76);
+  const totalW = cardW * 3 + gap * 2;
+  const startX = Math.round((W - totalW) / 2);
+  const cardTop = Math.round(H * 0.17);
+  return CHARACTER_DEFS.map((_, i) => ({
+    x: startX + i * (cardW + gap),
+    y: cardTop,
+    w: cardW,
+    h: cardH
+  }));
+}
+
+function selectCharacter(charDef) {
+  const p = game.player;
+  p.charDef = charDef;
+  p.hp = charDef.hp;
+  p.maxHp = charDef.maxHp;
+  p.armor = charDef.armor;
+  p.maxArmor = charDef.maxArmor;
+  p.speed = charDef.speed;
+  game.state = 'playing';
+  startMap(0, false);
+  updatePanel(game.enemies.length);
+}
+
 function drawPlayer(player) {
+  const cd = player.charDef || CHARACTER_DEFS[1];
   const x = canvas.width / 2;
   const y = canvas.height / 2;
   const stride = player.moving ? Math.sin(player.walkCycle) : 0;
   const bob = player.moving ? Math.sin(player.walkCycle * 2) * 2.2 : 0;
   const armSwing = player.moving ? Math.sin(player.walkCycle + Math.PI / 2) * 0.4 : 0;
   const recoil = Math.max(0, player.fireCooldown * 34);
-  const shirtColor = player.invulnerable > 0 ? '#ffd66e' : '#73ccff';
+  const shirtColor = player.invulnerable > 0 ? '#ffd66e' : cd.shirt;
   const knifeProgress = player.knifeAnim > 0 ? 1 - player.knifeAnim / 0.16 : 0;
   const knifeStabOffset = player.activeWeapon === 'knife' ? Math.sin(knifeProgress * Math.PI) * 14 : 0;
 
@@ -2020,24 +2411,34 @@ function drawPlayer(player) {
 
   const legLiftA = stride * 5.8;
   const legLiftB = -stride * 5.8;
-  ctx.fillStyle = '#365786';
+  ctx.fillStyle = cd.pants;
   ctx.fillRect(-9, 7 + legLiftA, 7, 15);
   ctx.fillRect(2, 7 + legLiftB, 7, 15);
 
-  ctx.fillStyle = '#1b2532';
+  ctx.fillStyle = cd.boots;
   ctx.fillRect(-10, 22 + legLiftA, 9, 3);
   ctx.fillRect(1, 22 + legLiftB, 9, 3);
 
   const torsoGrad = ctx.createLinearGradient(-10, -6, 10, 12);
   torsoGrad.addColorStop(0, shirtColor);
-  torsoGrad.addColorStop(1, '#3c9dd0');
+  torsoGrad.addColorStop(1, player.invulnerable > 0 ? '#d4aa00' : cd.shirtDark);
   ctx.fillStyle = torsoGrad;
   ctx.fillRect(-11, -4, 22, 15);
+
+  // Vanguard chest armor plate
+  if (cd.hasHelmet) {
+    ctx.fillStyle = cd.helmetColor;
+    ctx.fillRect(-9, -3, 18, 12);
+    ctx.fillStyle = cd.helmetDark;
+    ctx.fillRect(-7, -1, 14, 3);
+    ctx.fillStyle = cd.accentColor;
+    ctx.fillRect(-3, 2, 6, 2);
+  }
 
   ctx.save();
   ctx.rotate(player.angle * 0.32);
 
-  ctx.fillStyle = '#cf8f69';
+  ctx.fillStyle = cd.skin;
   ctx.save();
   ctx.translate(-11, 2);
   ctx.rotate(-0.5 + armSwing);
@@ -2050,20 +2451,48 @@ function drawPlayer(player) {
   ctx.fillRect(-2, -2, 4, 11);
   ctx.restore();
 
-  const headGrad = ctx.createLinearGradient(-8, -16, 8, -4);
-  headGrad.addColorStop(0, '#ffd0aa');
-  headGrad.addColorStop(1, '#d49f77');
-  ctx.fillStyle = headGrad;
-  ctx.fillRect(-8, -16, 16, 13);
+  // Head
+  if (cd.hasHelmet) {
+    ctx.fillStyle = cd.helmetColor;
+    ctx.fillRect(-9, -18, 18, 15);
+    ctx.fillStyle = cd.helmetDark;
+    ctx.fillRect(-7, -15, 14, 7);
+    ctx.fillStyle = 'rgba(180,255,100,0.55)';
+    ctx.fillRect(-6, -14, 12, 5);
+    ctx.fillStyle = cd.accentColor;
+    ctx.fillRect(-9, -4, 18, 2);
+  } else if (cd.hasHood) {
+    ctx.fillStyle = cd.hoodColor;
+    ctx.fillRect(-10, -18, 20, 15);
+    ctx.fillStyle = cd.hoodDark;
+    ctx.fillRect(-8, -16, 16, 6);
+    ctx.fillStyle = cd.skin;
+    ctx.fillRect(-5, -12, 10, 8);
+    ctx.fillStyle = cd.accentColor;
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(-4, -10, 3, 2);
+    ctx.fillRect(1, -10, 3, 2);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = cd.hoodColor;
+    ctx.fillRect(-10, -5, 20, 3);
+  } else {
+    const headGrad = ctx.createLinearGradient(-8, -16, 8, -4);
+    headGrad.addColorStop(0, cd.skin);
+    headGrad.addColorStop(1, cd.skinDark);
+    ctx.fillStyle = headGrad;
+    ctx.fillRect(-8, -16, 16, 13);
 
-  ctx.fillStyle = '#5f3f2a';
-  ctx.fillRect(-8, -16, 16, 4);
+    ctx.fillStyle = cd.hair;
+    ctx.fillRect(-8, -16, 16, 4);
+  }
 
-  const eyeOffsetX = Math.cos(player.angle) * 1.7;
-  const eyeOffsetY = Math.sin(player.angle) * 1.4;
-  ctx.fillStyle = '#15202a';
-  ctx.fillRect(-5 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
-  ctx.fillRect(2 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
+  if (!cd.hasHelmet && !cd.hasHood) {
+    const eyeOffsetX = Math.cos(player.angle) * 1.7;
+    const eyeOffsetY = Math.sin(player.angle) * 1.4;
+    ctx.fillStyle = '#15202a';
+    ctx.fillRect(-5 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
+    ctx.fillRect(2 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
+  }
 
   ctx.save();
   ctx.rotate(player.angle);
@@ -2420,9 +2849,28 @@ canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
   game.mouse.x = ((e.clientX - rect.left) / rect.width) * canvas.width;
   game.mouse.y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+
+  if (game.state === 'character-select') {
+    const mx = game.mouse.x;
+    const my = game.mouse.y;
+    const bounds = getCharSelectCardBounds();
+    let hover = -1;
+    bounds.forEach((b, i) => {
+      if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) hover = i;
+    });
+    game.charSelectHover = hover;
+    canvas.style.cursor = hover >= 0 ? 'pointer' : 'default';
+  }
 });
 
 canvas.addEventListener('mousedown', () => {
+  if (game.state === 'character-select') {
+    if (game.charSelectHover >= 0) {
+      selectCharacter(CHARACTER_DEFS[game.charSelectHover]);
+      canvas.style.cursor = 'default';
+    }
+    return;
+  }
   game.mouse.down = true;
 });
 
@@ -2433,7 +2881,5 @@ window.addEventListener('mouseup', () => {
 window.addEventListener('resize', resizeCanvasToViewport);
 
 resizeCanvasToViewport();
-startMap(0, false);
 initSettingsUI();
-updatePanel(game.enemies.length);
 requestAnimationFrame(gameLoop);

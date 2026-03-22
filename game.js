@@ -1,5 +1,7 @@
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false });
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
 const statusEl = document.getElementById('status');
 const scoreboardEl = document.getElementById('scoreboard');
 const settingsEl = document.getElementById('settings');
@@ -214,340 +216,335 @@ const LEVEL_THEMES = [
 
 const maps = [
   {
-    // Level 1: Rooms connected by long hallways. Spawn room (top-left) → long hall east → Cargo room →
-    // long hall south → Central Hub → long hall east → Storage → long hall south → Exit room (locked)
+    // Level 1: 6 rooms connected by 1-tile-wide corridors (8-11 tiles long)
+    // SPAWN(TL) --C3--> DOCK(TR) --C5--> OBS(R)
+    //   |C1                |C2                |
+    // ARMORY(BL) --C4--> HUB(BR) --C6--> EXIT(R,locked)
     name: 'Docking Ring',
-    width: 44,
-    height: 30,
+    width: 48,
+    height: 28,
     walls: [
       // outer boundary
-      [0, 0, 44, 1], [0, 29, 44, 1], [0, 0, 1, 30], [43, 0, 1, 30],
-
-      // === SPAWN ROOM (x:1-10, y:1-8) — safe starting area ===
-      [1, 9, 10, 1],       // south wall of spawn room
-      // gap at x:5-6 for door into hallway south
-
-      // === HALLWAY SOUTH from spawn (x:5-6, y:10-15) — 2-tile wide, 6 long ===
-      [4, 10, 1, 6], [7, 10, 1, 6],
-
-      // === ARMORY ROOM (x:1-10, y:16-22) ===
-      [1, 16, 4, 1], [7, 16, 4, 1],  // north wall, gap at x:5-6
-      [1, 23, 10, 1],                  // south wall
-      [11, 16, 1, 3], [11, 20, 1, 3], // east wall, door gap at (11,19)
-
-      // === HALLWAY EAST from armory (x:12-19, y:19) — 8 tiles long, 2 wide ===
-      [12, 18, 8, 1], [12, 20, 8, 1],
-
-      // === CENTRAL HUB (x:20-30, y:15-23) — large room ===
-      [20, 14, 11, 1],                  // north wall
-      [20, 24, 11, 1],                  // south wall
-      [20, 15, 1, 3], [20, 19, 1, 4],  // west wall, gap at (20,18) unused since hallway enters at y:19
-      [31, 15, 1, 4], [31, 20, 1, 4],  // east wall, door gap at (31,19)
-
-      // === HALLWAY EAST from hub (x:32-38, y:19) — 7 tiles long ===
-      [32, 18, 7, 1], [32, 20, 7, 1],
-
-      // === EXIT ROOM (x:33-42, y:22-28) — locked door access ===
-      [33, 21, 6, 1], [40, 21, 3, 1],  // north wall, door gap at (39,21)
-      [32, 22, 1, 7],                    // west wall
-      // south + east use outer boundary
-
-      // === HALLWAY NORTH from spawn room to Observation (x:5-6, y:1 connects via spawn room ceiling) ===
-      // Spawn room already at top
-
-      // === SIDE ROOM: Dock Clamps (x:14-22, y:1-8) ===
-      [11, 1, 3, 1], [11, 2, 1, 7], // west wall
-      [14, 9, 9, 1],                  // south wall
-      [23, 1, 1, 4], [23, 6, 1, 3],  // east wall, door gap at (23,5)
-
-      // === HALLWAY from spawn to Dock Clamps (x:11-13, y:4) — 3-wide hallway ===
-      [11, 3, 3, 1], [11, 5, 1, 4], // partial walls channeling
-
-      // === HALLWAY EAST from Dock Clamps (x:24-30, y:5) — 7 long ===
-      [24, 4, 7, 1], [24, 6, 7, 1],
-
-      // === OBSERVATION ROOM (x:31-42, y:1-10) ===
-      [31, 4, 1, 2], [31, 7, 1, 4],  // west wall with door gap at (31,6)
-      [31, 11, 12, 1],                 // south wall
-
-      // === Connecting hallway from Obs to Exit area (x:39, y:12-20) ===
-      [38, 12, 1, 3], [38, 16, 1, 5],  // west wall, door gap at (38,15)
-      [40, 12, 1, 9],                   // east wall
+      [0,0,48,1], [0,27,48,1], [0,0,1,28], [47,0,1,28],
+      // SPAWN ROOM (floor x:1-10, y:1-8)
+      [11,1,1,3], [11,5,1,4],        // E wall, door gap (11,4)
+      [1,9,4,1], [6,9,5,1],          // S wall, door gap (5,9)
+      // C3 corridor fill (x:12-22 between Spawn/Dock, corridor at y:4)
+      [12,1,11,3], [12,5,11,4],
+      // DOCK ROOM (floor x:24-34, y:1-8)
+      [23,1,1,3], [23,5,1,4],        // W wall, door gap (23,4)
+      [35,1,1,3], [35,5,1,4],        // E wall, door gap (35,4)
+      [24,9,4,1], [29,9,6,1],        // S wall, door gap (28,9)
+      // C5 corridor fill (x:36-38 between Dock/OBS, corridor at y:4)
+      [36,1,3,3], [36,5,3,4],
+      // OBS ROOM (floor x:40-46, y:1-10)
+      [39,1,1,3], [39,5,1,6],        // W wall, door gap (39,4)
+      [40,11,7,1],                     // S wall
+      // C1 corridor fill (between Spawn/Armory, corridor at x:5)
+      [1,10,4,8], [6,10,5,8],
+      // C2 corridor fill (between Dock/Hub, corridor at x:28)
+      [24,10,4,8], [29,10,6,8],
+      // Center fill (x:11-22, y:9-18)
+      [11,9,12,10],
+      // Bridge column fill (x:23, y:9-18)
+      [23,9,1,10],
+      // Right fill (x:35-39, y:9-18)
+      [35,9,5,10],
+      // OBS-to-EXIT gap fill (x:40-46, y:12-17)
+      [40,12,7,6],
+      // ARMORY ROOM (floor x:1-10, y:19-26)
+      [1,18,4,1], [6,18,5,1],        // N wall, door gap (5,18)
+      [11,19,1,3], [11,23,1,4],      // E wall, door gap (11,22)
+      // C4 corridor fill (x:12-22 between Armory/Hub, corridor at y:22)
+      [12,19,11,3], [12,23,11,4],
+      // HUB ROOM (floor x:24-34, y:19-26)
+      [23,19,1,3], [23,23,1,4],      // W wall, door gap (23,22)
+      [24,18,4,1], [29,18,6,1],      // N wall, door gap (28,18)
+      [35,19,1,3], [35,23,1,4],      // E wall, door gap (35,22)
+      // C6 corridor fill (x:36-38 between Hub/Exit, corridor at y:22)
+      [36,19,3,3], [36,23,3,4],
+      // EXIT ROOM (floor x:40-46, y:19-26)
+      [39,19,1,3], [39,23,1,4],      // W wall, door gap (39,22) LOCKED
+      [40,18,7,1],                     // N wall
     ],
     doors: [
-      { x: 5, y: 9, w: 2, h: 1, locked: false, orientation: 'h', swingDir: 1 },    // spawn→south hallway
-      { x: 11, y: 19, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // armory→east hallway
-      { x: 31, y: 19, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // hub→east hallway
-      { x: 23, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // dock→east hallway
-      { x: 31, y: 6, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },   // obs room entrance
-      { x: 38, y: 15, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // obs→exit connector
-      { x: 39, y: 21, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }     // locked exit door
+      { x: 11, y: 4, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // spawn→C3
+      { x: 5, y: 9, w: 1, h: 1, locked: false, orientation: 'h', swingDir: 1 },    // spawn→C1
+      { x: 35, y: 4, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // dock→C5→obs
+      { x: 28, y: 9, w: 1, h: 1, locked: false, orientation: 'h', swingDir: 1 },   // dock→C2
+      { x: 11, y: 22, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },  // armory→C4
+      { x: 35, y: 22, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },  // hub→C6
+      { x: 39, y: 22, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }    // exit LOCKED
     ],
-    keyPickup: { x: 36.5, y: 5.5 },
+    keyPickup: { x: 43.5, y: 5.5 },
     features: [
-      { type: 'docking-clamp', x: 18, y: 5 },
-      { type: 'airlock-chamber', x: 25.5, y: 19.5 },
-      { type: 'painting-landscape', x: 3, y: 3 },
-      { type: 'painting-portrait', x: 8, y: 3 },
-      { type: 'wall-terminal', x: 2, y: 18 },
-      { type: 'wall-pipes', x: 9, y: 20 },
-      { type: 'floor-grate', x: 5.5, y: 12.5 },
-      { type: 'painting-abstract', x: 36, y: 3 },
-      { type: 'wall-banner', x: 25, y: 16 },
-      { type: 'floor-rug', x: 25, y: 19 },
-      { type: 'wall-light', x: 4, y: 10.5 },
-      { type: 'wall-light', x: 7, y: 10.5 },
-      { type: 'ceiling-fan', x: 5.5, y: 5 },
+      { type: 'docking-clamp', x: 29, y: 4 },
+      { type: 'airlock-chamber', x: 29, y: 22 },
+      // Paintings ON walls (placed at wall y-coord + 0.7 inward)
+      { type: 'painting-landscape', x: 3.5, y: 1.7 },   // spawn N wall
+      { type: 'painting-portrait', x: 7.5, y: 1.7 },     // spawn N wall
+      { type: 'painting-abstract', x: 43, y: 1.7 },       // obs N wall
+      { type: 'painting-landscape', x: 29, y: 19.7 },     // hub N wall
+      { type: 'painting-portrait', x: 3.5, y: 19.7 },     // armory N wall
+      // Wall-mounted items (on walls)
+      { type: 'wall-terminal', x: 1.7, y: 21 },           // armory W wall
+      { type: 'wall-pipes', x: 1.7, y: 24 },              // armory W wall
+      { type: 'wall-clock', x: 43, y: 11.7 },             // obs S wall area
+      { type: 'wall-bookshelf', x: 46.3, y: 5 },          // obs E wall
+      { type: 'wall-banner', x: 29, y: 18.7 },            // hub N wall
+      // Floor items
+      { type: 'lamp-post', x: 5, y: 12 },                 // C1 corridor
+      { type: 'lamp-post', x: 28, y: 14 },                // C2 corridor
+      { type: 'lamp-post', x: 17, y: 4 },                 // C3 corridor
+      { type: 'floor-rug', x: 29, y: 22 },                // hub center
+      { type: 'ceiling-fan', x: 5.5, y: 4.5 },            // spawn
       { type: 'potted-plant', x: 2, y: 8 },
       { type: 'potted-plant', x: 9, y: 8 },
-      { type: 'crate-stack', x: 22, y: 22 },
-      { type: 'crate-stack', x: 28, y: 16 },
-      { type: 'wall-clock', x: 37, y: 8 }
+      { type: 'crate-stack', x: 26, y: 24 },
+      { type: 'crate-stack', x: 32, y: 20 },
+      { type: 'floor-grate', x: 5, y: 15 },
     ],
     enemies: [
-      // All enemies far from spawn (spawn is at x:5.5, y:4.5)
-      { x: 25, y: 19, hp: 55 },        // Central Hub
-      { x: 28, y: 17, hp: 65, type: 'shield' }, // Central Hub
-      { x: 38, y: 25, hp: 60, type: 'flanker' }  // Exit room area
+      { x: 29, y: 22, hp: 55 },                   // hub
+      { x: 32, y: 20, hp: 65, type: 'shield' },   // hub
+      { x: 43, y: 22, hp: 60, type: 'flanker' }   // exit room
     ],
     pickups: [
-      { x: 5.5, y: 19.5, type: 'ammo-handgun', value: 15 },  // armory
-      { x: 25.5, y: 17.5, type: 'health', value: 20 },       // hub
-      { x: 37.5, y: 8.5, type: 'armor', value: 20 }          // observation
+      { x: 5.5, y: 22.5, type: 'ammo-handgun', value: 15 },
+      { x: 29.5, y: 20.5, type: 'health', value: 20 },
+      { x: 43.5, y: 8.5, type: 'armor', value: 20 }
     ],
     spawn: { x: 5.5, y: 4.5 },
-    exit: { x: 38.5, y: 25.5 }
+    exit: { x: 43.5, y: 22.5 }
   },
   {
-    // Level 2: Larger layout with rooms and long connecting hallways
-    // Spawn (top-left) → long hall → Library → hall → Server Room → hall → Core Room → locked exit
+    // Level 2: 6 rooms in a winding path
+    // SPAWN --C1--> LIBRARY --C2--> SERVER
+    //                                  |C3
+    // STUDY <--C5-- ARCHIVE <--C4-- (down)
+    //                  |locked sub-room (EXIT)
     name: 'Core Archive',
     width: 48,
-    height: 34,
+    height: 28,
     walls: [
       // outer boundary
-      [0, 0, 48, 1], [0, 33, 48, 1], [0, 0, 1, 34], [47, 0, 1, 34],
-
-      // === SPAWN ROOM (x:1-10, y:1-9) ===
-      [11, 1, 1, 4], [11, 6, 1, 4],  // east wall, door gap at (11,5)
-      [1, 10, 10, 1],                  // south wall
-
-      // === HALLWAY EAST from spawn (x:12-20, y:5) — 9 tiles long, 2 wide ===
-      [12, 4, 9, 1], [12, 6, 9, 1],
-
-      // === LIBRARY ROOM (x:21-32, y:1-10) ===
-      [21, 4, 1, 2], [21, 7, 1, 4],  // west wall, door gap at (21,6) for alternate
-      [33, 1, 1, 4], [33, 6, 1, 5],   // east wall, door gap at (33,5)
-      [21, 11, 12, 1],                 // south wall
-
-      // === HALLWAY EAST from library (x:34-40, y:5) — 7 tiles ===
-      [34, 4, 7, 1], [34, 6, 7, 1],
-
-      // === SERVER ROOM (x:35-46, y:8-16) ===
-      [34, 8, 1, 4], [34, 13, 1, 4],  // west wall, door gap at (34,12)
-      [35, 7, 12, 1],                   // north wall
-      [35, 17, 12, 1],                  // south wall
-
-      // === HALLWAY SOUTH from server (x:39-40, y:18-24) — 7 tiles long ===
-      [38, 18, 1, 7], [41, 18, 1, 7],
-
-      // === CENTRAL ARCHIVE (x:28-42, y:22-32) — large room ===
-      [27, 22, 1, 4], [27, 27, 1, 6], // west wall, door gap at (27,26)
-      [28, 21, 10, 1], [41, 21, 2, 1],  // north wall gap for hallway
-      [43, 22, 1, 11],                  // east wall
-
-      // === HALLWAY WEST from archive (x:18-26, y:26) — 9 tiles ===
-      [18, 25, 9, 1], [18, 27, 9, 1],
-
-      // === STUDY ROOM (x:1-16, y:22-32) ===
-      [17, 22, 1, 3], [17, 26, 1, 7],  // east wall, door gap at (17,25)
-      [1, 21, 16, 1],                    // north wall
-
-      // === HALLWAY connecting spawn south wall to study (x:5-6, y:11-20) ===
-      [4, 11, 1, 10], [7, 11, 1, 10],
-
-      // === PASSAGE from library south to hallway (x:26, y:12-20) ===
-      [25, 12, 1, 4], [25, 17, 1, 4],  // west wall, door gap at (25,16)
-      [26, 12, 1, 9],                    // east partial
-
-      // === DATA CORE SUB-ROOM in archive (x:35-42, y:28-32) — locked ===
-      [35, 27, 3, 1], [39, 27, 4, 1],  // partition, locked door gap at (38,27)
+      [0,0,48,1], [0,27,48,1], [0,0,1,28], [47,0,1,28],
+      // SPAWN ROOM (floor x:1-10, y:1-8)
+      [11,1,1,3], [11,5,1,4],        // E wall, door gap (11,4)
+      [1,9,10,1],                      // S wall solid
+      // C1 corridor fill (x:12-20, corridor at y:4)
+      [12,1,9,3], [12,5,9,4],
+      // LIBRARY ROOM (floor x:22-32, y:1-8)
+      [21,1,1,3], [21,5,1,4],        // W wall, door gap (21,4)
+      [33,1,1,3], [33,5,1,4],        // E wall, door gap (33,4)
+      [22,9,11,1],                     // S wall solid
+      // C2 corridor fill (x:34-38, corridor at y:4)
+      [34,1,5,3], [34,5,5,4],
+      // SERVER ROOM (floor x:40-46, y:1-10)
+      [39,1,1,3], [39,5,1,6],        // W wall, door gap (39,4)
+      [40,11,7,1],                     // S wall
+      [40,12,7,1], [47,12,1,6],      // fill below + E col (reuse outer)
+      // C3 corridor fill (between Server/Archive, corridor at x:43)
+      [40,12,3,7], [44,12,3,7],
+      // Right fill (x:39-46, y:9-18)
+      [39,9,1,10],                     // continued wall at x:39
+      // Center/left fill (x:11-38, y:9-18)
+      [11,9,28,10],
+      // ARCHIVE ROOM (floor x:28-42, y:19-26)
+      [28,19,15,1],                    // N wall gap for C3: need to split
+      // Redefine: Archive N wall with gap at x:43
+      [27,19,1,4], [27,24,1,3],      // W wall, door gap (27,23)
+      [43,19,1,4], [43,24,1,3],      // E wall (also C3 enters here)
+      [28,18,15,1],                    // N wall
+      // C4/C3 connecting: corridor at x:43 from y:12 to y:18
+      // C3 fill already covers x:40-42 and x:44-46, leaving x:43 open y:12-17
+      // But we need gap in archive N wall at x:43 → already: E wall starts at x:43
+      // Actually archive uses outer E wall? No, archive is x:28-42.
+      // Let me fix: archive floor x:28-42, N wall at y:18
+      // C3 corridor at x:43, y:12-17 — but x:43 is OUTSIDE archive (archive ends at x:42)
+      // Need to rethink. Let archive go to x:46 and corridor enter from north.
+      // SIMPLER: corridor at x:35, going south from server area
+      [35,18,1,3], [35,22,1,5],      // partition in archive, locked door gap (35,21)
+      // C5 corridor fill (x:18-26, corridor at y:23)
+      [18,19,9,4], [18,24,9,3],
+      // STUDY ROOM (floor x:1-16, y:19-26)
+      [17,19,1,4], [17,24,1,3],      // E wall, door gap (17,23)
+      [1,18,16,1],                     // N wall
     ],
     doors: [
-      { x: 11, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // spawn→east hall
-      { x: 33, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // library→east hall
-      { x: 34, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // server west door
-      { x: 27, y: 26, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // archive→west hall
-      { x: 17, y: 25, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // study east door
-      { x: 25, y: 16, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // library south passage
-      { x: 38, y: 27, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }     // locked exit sub-room
+      { x: 11, y: 4, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // spawn→C1
+      { x: 33, y: 4, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // library→C2
+      { x: 27, y: 23, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // archive→C5
+      { x: 17, y: 23, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // study entrance
+      { x: 35, y: 21, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }     // locked exit
     ],
-    keyPickup: { x: 40.5, y: 12.5 },
+    keyPickup: { x: 43.5, y: 5.5 },
     features: [
-      { type: 'data-core', x: 38.5, y: 30 },
-      { type: 'server-racks', x: 40, y: 12 },
-      { type: 'painting-landscape', x: 3, y: 3 },
-      { type: 'painting-portrait', x: 8, y: 3 },
-      { type: 'painting-abstract', x: 26, y: 3 },
-      { type: 'wall-bookshelf', x: 23, y: 3 },
-      { type: 'wall-bookshelf', x: 30, y: 3 },
-      { type: 'wall-bookshelf', x: 23, y: 9 },
-      { type: 'floor-rug', x: 27, y: 5 },
-      { type: 'wall-terminal', x: 37, y: 9 },
-      { type: 'wall-terminal', x: 44, y: 9 },
-      { type: 'wall-pipes', x: 37, y: 15 },
-      { type: 'floor-grate', x: 39.5, y: 21 },
-      { type: 'wall-banner', x: 35, y: 23 },
-      { type: 'wall-light', x: 12, y: 4.5 },
-      { type: 'wall-light', x: 18, y: 4.5 },
-      { type: 'ceiling-fan', x: 5.5, y: 5 },
-      { type: 'potted-plant', x: 2, y: 9 },
-      { type: 'potted-plant', x: 9, y: 9 },
-      { type: 'crate-stack', x: 3, y: 28 },
-      { type: 'wall-clock', x: 10, y: 23 },
-      { type: 'painting-landscape', x: 5, y: 23 },
-      { type: 'potted-plant', x: 15, y: 22 },
-      { type: 'floor-rug', x: 8, y: 27 }
+      { type: 'data-core', x: 38, y: 23 },
+      { type: 'server-racks', x: 43, y: 5 },
+      // Paintings ON walls
+      { type: 'painting-landscape', x: 3, y: 1.7 },      // spawn N wall
+      { type: 'painting-portrait', x: 8, y: 1.7 },        // spawn N wall
+      { type: 'painting-abstract', x: 27, y: 1.7 },       // library N wall
+      { type: 'painting-landscape', x: 5, y: 18.7 },      // study N wall
+      { type: 'painting-portrait', x: 12, y: 18.7 },      // study N wall
+      // Wall items
+      { type: 'wall-bookshelf', x: 23.7, y: 3 },          // library W wall
+      { type: 'wall-bookshelf', x: 23.7, y: 7 },          // library W wall
+      { type: 'wall-terminal', x: 40.7, y: 3 },           // server W wall area
+      { type: 'wall-terminal', x: 40.7, y: 8 },           // server
+      { type: 'wall-pipes', x: 1.7, y: 22 },              // study W wall
+      { type: 'wall-banner', x: 35, y: 18.7 },            // archive N wall
+      { type: 'wall-clock', x: 10, y: 18.7 },             // study N wall
+      // Floor items
+      { type: 'lamp-post', x: 16, y: 4 },                 // C1 corridor
+      { type: 'lamp-post', x: 36, y: 4 },                 // C2 corridor
+      { type: 'lamp-post', x: 22, y: 23 },                // C5 corridor
+      { type: 'floor-rug', x: 27, y: 4 },                 // library center
+      { type: 'floor-rug', x: 8, y: 23 },                 // study center
+      { type: 'ceiling-fan', x: 5.5, y: 4.5 },            // spawn
+      { type: 'potted-plant', x: 2, y: 8 },
+      { type: 'potted-plant', x: 9, y: 8 },
+      { type: 'potted-plant', x: 15, y: 19 },
+      { type: 'crate-stack', x: 3, y: 24 },
+      { type: 'floor-grate', x: 35, y: 15 },
     ],
     enemies: [
-      // Enemies far from spawn (spawn at 5.5, 5.5)
-      { x: 40, y: 12, hp: 75, type: 'shield' },   // server room
-      { x: 36, y: 15, hp: 65 },                     // server room
-      { x: 35, y: 26, hp: 70 },                     // central archive
-      { x: 40, y: 25, hp: 65 },                     // central archive
-      { x: 8, y: 28, hp: 50, type: 'dog' }          // study room
+      { x: 43, y: 5, hp: 75, type: 'shield' },   // server
+      { x: 41, y: 8, hp: 65 },                     // server
+      { x: 35, y: 23, hp: 70 },                    // archive
+      { x: 40, y: 22, hp: 65 },                    // archive
+      { x: 8, y: 24, hp: 50, type: 'dog' }         // study
     ],
     pickups: [
-      { x: 8.5, y: 26.5, type: 'ammo-handgun', value: 20 },   // study
-      { x: 42.5, y: 9.5, type: 'health', value: 25 },          // server
-      { x: 7.5, y: 7.5, type: 'health', value: 20 },           // spawn room
-      { x: 35.5, y: 30.5, type: 'ammo-shotgun', value: 4 },    // archive
-      { x: 26.5, y: 5.5, type: 'armor', value: 25 }            // library
+      { x: 8.5, y: 23.5, type: 'ammo-handgun', value: 20 },
+      { x: 43.5, y: 3.5, type: 'health', value: 25 },
+      { x: 7.5, y: 5.5, type: 'health', value: 20 },
+      { x: 38.5, y: 25.5, type: 'ammo-shotgun', value: 4 },
+      { x: 27.5, y: 4.5, type: 'armor', value: 25 }
     ],
-    spawn: { x: 5.5, y: 5.5 },
-    exit: { x: 39.5, y: 30.5 }
+    spawn: { x: 5.5, y: 4.5 },
+    exit: { x: 38.5, y: 23.5 }
   },
   {
-    // Level 3: Snake-path rooms connected by long corridors
-    // Spawn → long hall → Decon → long hall → Reactor → long hall → Cooling → long hall → Exit
+    // Level 3: 6 rooms snake pattern
+    // SPAWN --C1--> DECON --C2(south)--> REACTOR --C3--> COOLING
+    //                                       |C4
+    // EXIT(locked) <--C6-- CONTROL <--C5-- MAINT
     name: 'Reactor Vault',
-    width: 50,
-    height: 38,
+    width: 48,
+    height: 36,
     walls: [
       // outer boundary
-      [0, 0, 50, 1], [0, 37, 50, 1], [0, 0, 1, 38], [49, 0, 1, 38],
-
-      // === SPAWN ROOM (x:1-12, y:1-9) — safe area, no enemies ===
-      [13, 1, 1, 4], [13, 6, 1, 4],  // east wall, door gap at (13,5)
-      [1, 10, 12, 1],                  // south wall
-
-      // === HALLWAY EAST from spawn (x:14-23, y:5) — 10 tiles long ===
-      [14, 4, 10, 1], [14, 6, 10, 1],
-
-      // === DECON ROOM (x:24-36, y:1-10) ===
-      [24, 4, 1, 2], [24, 7, 1, 4],  // west wall
-      [37, 1, 1, 4], [37, 6, 1, 5],   // east wall, door gap at (37,5)
-      [24, 11, 13, 1],                  // south wall
-
-      // === HALLWAY from decon going south (x:30-31, y:12-19) — 8 tiles ===
-      [29, 12, 1, 8], [32, 12, 1, 8],
-
-      // === ARMORY SIDE ROOM (x:38-48, y:1-10) ===
-      [38, 5, 1, 2], [38, 8, 1, 3],   // west wall, door gap at (38,7) leads from hallway
-      [38, 11, 11, 1],                  // south wall
-
-      // === HALLWAY from decon east (x:38-48, y:5-6) — connects decon→armory, 2-wide ===
-      // actually use the door gap at (37,5) and armory door at (38,7)
-
-      // === REACTOR ROOM (x:20-34, y:20-30) — large center room ===
-      [19, 20, 1, 4], [19, 25, 1, 6], // west wall, door gap at (19,24)
-      [20, 19, 15, 1],                  // north wall
-      [35, 20, 1, 4], [35, 25, 1, 6],  // east wall, door gap at (35,24)
-      [20, 31, 15, 1],                  // south wall
-
-      // === HALLWAY WEST from reactor (x:10-18, y:24) — 9 tiles ===
-      [10, 23, 9, 1], [10, 25, 9, 1],
-
-      // === MAINTENANCE ROOM (x:1-9, y:20-30) ===
-      [1, 19, 9, 1],                    // north wall
-      [10, 20, 1, 3], [10, 24, 1, 7],  // east wall, door gap for hallway
-      [1, 31, 9, 1],                    // south wall
-
-      // === HALLWAY EAST from reactor (x:36-43, y:24) — 8 tiles ===
-      [36, 23, 8, 1], [36, 25, 8, 1],
-
-      // === COOLING ROOM (x:38-48, y:20-30) ===
-      [37, 20, 12, 1],                  // north wall
-      [37, 31, 12, 1],                  // south wall
-      [44, 20, 1, 3], [44, 24, 1, 7],  // partition reuse for inner wall
-
-      // === HALLWAY SOUTH from maintenance (x:5-6, y:32-36) ===
-      [4, 32, 1, 5], [7, 32, 1, 5],
-
-      // === CONTROL ROOM (x:1-14, y:32-36) ===
-      // uses hallway gap and outer boundary
-      [15, 32, 1, 2], [15, 35, 1, 2],  // east wall, door gap at (15,34)
-
-      // === HALLWAY EAST from control (x:16-24, y:34) — 9 tiles ===
-      [16, 33, 9, 1], [16, 35, 9, 1],
-
-      // === EXIT ROOM (x:25-42, y:32-36) — locked door ===
-      [25, 32, 1, 2], [25, 35, 1, 2],  // west wall, locked door gap at (25,34)
+      [0,0,48,1], [0,35,48,1], [0,0,1,36], [47,0,1,36],
+      // SPAWN ROOM (floor x:1-10, y:1-8)
+      [11,1,1,3], [11,5,1,4],        // E wall, door gap (11,4)
+      [1,9,4,1], [6,9,5,1],          // S wall, door gap (5,9)
+      // C1 corridor fill (x:12-22, corridor at y:4)
+      [12,1,11,3], [12,5,11,4],
+      // DECON ROOM (floor x:24-34, y:1-8)
+      [23,1,1,3], [23,5,1,4],        // W wall, door gap (23,4)
+      [24,9,4,1], [29,9,6,1],        // S wall, door gap (28,9)
+      [35,1,1,8],                      // E wall solid
+      // Right fill (x:35-46, y:1-10)
+      [35,1,12,9],
+      // C2 corridor fill (between Decon/Reactor, corridor at x:28)
+      [24,10,4,6], [29,10,6,6],
+      // REACTOR ROOM (floor x:24-34, y:17-24)
+      [24,16,4,1], [29,16,6,1],      // N wall, door gap (28,16)
+      [23,17,1,3], [23,21,1,4],      // W wall, door gap (23,20)
+      [35,17,1,3], [35,21,1,4],      // E wall, door gap (35,20)
+      [24,25,11,1],                    // S wall solid
+      // C3 corridor fill (x:36-38, corridor at y:20)
+      [36,17,3,3], [36,21,3,4],
+      // COOLING ROOM (floor x:40-46, y:17-24)
+      [39,17,1,3], [39,21,1,4],      // W wall, door gap (39,20)
+      [40,16,7,1],                     // N wall
+      [40,25,7,1],                     // S wall
+      // Right fill (x:35-46, y:10-16)
+      [35,10,12,6],
+      // C4 corridor fill (between Reactor/Maint, corridor at x:28)
+      [24,26,4,2], [29,26,6,2],
+      // MAINT ROOM (floor x:24-34, y:28-34)
+      [24,28,4,1], [29,28,6,1],      // N wall, door gap (28,28)
+      [23,29,1,2], [23,32,1,3],      // W wall, door gap (23,31)
+      [35,29,1,6],                     // E wall solid
+      // Right fill (x:35-46, y:25-34)
+      [35,25,12,10],
+      // C5 corridor fill (x:14-22, corridor at y:31)
+      [14,29,9,2], [14,32,9,3],
+      // CONTROL ROOM (floor x:1-12, y:28-34)
+      [13,29,1,2], [13,32,1,3],      // E wall, door gap (13,31)
+      [1,28,12,1],                     // N wall
+      // Left fill (x:1-10, y:10-27)
+      [1,10,10,8],                     // x:1-10, y:10-17
+      [1,18,22,10],                    // x:1-22, y:18-27 (left+center area)
+      // C6 corridor fill (x:14-22, corridor at y:31 — reuse C5 area for exit connection)
+      // Actually need a different path. Control→Exit via south corridor.
+      // EXIT ROOM (floor x:1-12, y:28-34) — wait, that overlaps with Control.
+      // Let me put exit to the left of control, accessed via door in control's west wall.
+      // SIMPLER: linear path continues west. CONTROL has locked door on its west side.
+      // But control is already at x:1 (against outer wall). Let me put EXIT below.
+      // RETHINK: Put exit as a sub-room of control, separated by locked partition.
+      [1,32,5,1], [7,32,5,1],        // partition in control, locked gap (6,32)
     ],
     doors: [
-      { x: 13, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // spawn east
-      { x: 37, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // decon east
-      { x: 19, y: 24, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // reactor west
-      { x: 35, y: 24, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // reactor east
-      { x: 15, y: 34, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // control east
-      { x: 25, y: 34, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }     // locked exit
+      { x: 11, y: 4, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // spawn→C1
+      { x: 5, y: 9, w: 1, h: 1, locked: false, orientation: 'h', swingDir: 1 },    // spawn→down (unused alt)
+      { x: 28, y: 16, w: 1, h: 1, locked: false, orientation: 'h', swingDir: 1 },  // decon→reactor
+      { x: 35, y: 20, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },  // reactor→C3→cooling
+      { x: 23, y: 20, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 }, // reactor→unused (sealed)
+      { x: 13, y: 31, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 }, // maint→control
+      { x: 6, y: 32, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }     // control→exit LOCKED
     ],
-    keyPickup: { x: 5.5, y: 25.5 },
+    keyPickup: { x: 43.5, y: 21.5 },
     features: [
-      { type: 'reactor-core', x: 27, y: 25 },
-      { type: 'coolant-pipes', x: 42, y: 25 },
-      { type: 'painting-landscape', x: 3, y: 3 },
-      { type: 'painting-portrait', x: 10, y: 3 },
-      { type: 'painting-abstract', x: 30, y: 3 },
-      { type: 'wall-terminal', x: 40, y: 3 },
-      { type: 'wall-terminal', x: 46, y: 3 },
-      { type: 'wall-pipes', x: 3, y: 22 },
-      { type: 'wall-pipes', x: 7, y: 22 },
-      { type: 'floor-grate', x: 30.5, y: 15.5 },
-      { type: 'wall-banner', x: 27, y: 20 },
-      { type: 'wall-banner', x: 32, y: 20 },
-      { type: 'wall-light', x: 14, y: 4.5 },
-      { type: 'wall-light', x: 22, y: 4.5 },
-      { type: 'ceiling-fan', x: 6.5, y: 5 },
-      { type: 'potted-plant', x: 2, y: 9 },
-      { type: 'potted-plant', x: 11, y: 9 },
-      { type: 'crate-stack', x: 40, y: 28 },
-      { type: 'crate-stack', x: 46, y: 22 },
-      { type: 'wall-clock', x: 8, y: 33 },
-      { type: 'floor-rug', x: 27, y: 25 },
-      { type: 'painting-landscape', x: 30, y: 33 },
-      { type: 'wall-bookshelf', x: 3, y: 33 },
-      { type: 'potted-plant', x: 13, y: 32 }
+      { type: 'reactor-core', x: 29, y: 20 },
+      { type: 'coolant-pipes', x: 43, y: 20 },
+      // Paintings ON walls
+      { type: 'painting-landscape', x: 3, y: 1.7 },      // spawn N wall
+      { type: 'painting-portrait', x: 8, y: 1.7 },        // spawn N wall
+      { type: 'painting-abstract', x: 29, y: 1.7 },       // decon N wall
+      { type: 'painting-landscape', x: 29, y: 28.7 },     // maint N wall
+      { type: 'painting-portrait', x: 6, y: 28.7 },       // control N wall
+      // Wall items
+      { type: 'wall-terminal', x: 1.7, y: 30 },           // control W wall
+      { type: 'wall-terminal', x: 1.7, y: 33 },           // exit area W wall
+      { type: 'wall-pipes', x: 40.7, y: 19 },             // cooling W wall
+      { type: 'wall-pipes', x: 40.7, y: 22 },             // cooling W wall
+      { type: 'wall-banner', x: 29, y: 16.7 },            // reactor N wall
+      { type: 'wall-banner', x: 32, y: 16.7 },            // reactor N wall
+      { type: 'wall-clock', x: 8, y: 28.7 },              // control N wall
+      { type: 'wall-bookshelf', x: 35.3, y: 30 },         // maint E wall
+      // Floor items
+      { type: 'lamp-post', x: 17, y: 4 },                 // C1 corridor
+      { type: 'lamp-post', x: 28, y: 13 },                // C2 corridor
+      { type: 'lamp-post', x: 18, y: 31 },                // C5 corridor
+      { type: 'floor-rug', x: 29, y: 20 },                // reactor center
+      { type: 'ceiling-fan', x: 5.5, y: 4.5 },            // spawn
+      { type: 'potted-plant', x: 2, y: 8 },
+      { type: 'potted-plant', x: 9, y: 8 },
+      { type: 'crate-stack', x: 43, y: 23 },
+      { type: 'crate-stack', x: 32, y: 32 },
+      { type: 'floor-grate', x: 28, y: 27 },
     ],
     enemies: [
-      // All enemies far from spawn (spawn at 6.5, 5.5)
-      { x: 30, y: 5, hp: 90 },                     // decon room
-      { x: 43, y: 5, hp: 90, type: 'shield' },     // armory
-      { x: 5, y: 25, hp: 85 },                      // maintenance
-      { x: 27, y: 23, hp: 95 },                     // reactor
-      { x: 32, y: 27, hp: 95, type: 'flanker' },   // reactor
-      { x: 42, y: 25, hp: 100 },                    // cooling
-      { x: 33, y: 34, hp: 105 },                    // exit room
-      { x: 8, y: 35, hp: 70, type: 'dog' }          // control room
+      { x: 29, y: 4, hp: 90 },                     // decon
+      { x: 43, y: 20, hp: 90, type: 'shield' },    // cooling
+      { x: 29, y: 19, hp: 95 },                     // reactor
+      { x: 32, y: 22, hp: 95, type: 'flanker' },   // reactor
+      { x: 43, y: 22, hp: 100 },                    // cooling
+      { x: 29, y: 31, hp: 105 },                    // maint
+      { x: 6, y: 30, hp: 70, type: 'dog' }          // control
     ],
     pickups: [
-      { x: 8.5, y: 34.5, type: 'ammo-sniper', value: 3 },     // control
-      { x: 30.5, y: 7.5, type: 'health', value: 25 },          // decon
-      { x: 27.5, y: 28.5, type: 'armor', value: 35 },          // reactor
-      { x: 43.5, y: 3.5, type: 'ammo-handgun', value: 15 }     // armory
+      { x: 4.5, y: 33.5, type: 'ammo-sniper', value: 3 },
+      { x: 29.5, y: 3.5, type: 'health', value: 25 },
+      { x: 29.5, y: 23.5, type: 'armor', value: 35 },
+      { x: 43.5, y: 18.5, type: 'ammo-handgun', value: 15 }
     ],
-    spawn: { x: 6.5, y: 5.5 },
-    exit: { x: 35.5, y: 34.5 }
+    spawn: { x: 5.5, y: 4.5 },
+    exit: { x: 6.5, y: 33.5 }
   }
 ];
 
@@ -1677,7 +1674,9 @@ function drawSpaceParallax(camera) {
         ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
       }
 
-      ctx.fillRect(drawX, drawY, size, size);
+      ctx.beginPath();
+      ctx.arc(drawX, drawY, size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 }
@@ -1711,24 +1710,23 @@ function drawGrid(camera) {
       ctx.fillStyle = floorGrad;
       ctx.fillRect(sx, sy, TILE, TILE);
 
-      const pulse = ((gx * 17 + gy * 11 + Math.floor(performance.now() * 0.004)) % 12) / 12;
-      ctx.fillStyle = theme.lineColor.replace('0.11', (0.06 + pulse * 0.05).toFixed(3)).replace('0.12', (0.06 + pulse * 0.05).toFixed(3));
-      ctx.fillRect(sx + 6, sy + 6, TILE - 12, 1.7);
-      ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.4);
+      ctx.fillStyle = theme.lineColor;
+      ctx.fillRect(sx + 10, sy + 10, TILE - 20, 1);
+      ctx.fillRect(sx + 10, sy + TILE - 11, TILE - 20, 1);
 
       ctx.fillStyle = theme.panelColor;
-      ctx.fillRect(sx + TILE * 0.28, sy + TILE * 0.18, TILE * 0.44, 2);
-      ctx.fillRect(sx + TILE * 0.18, sy + TILE * 0.72, TILE * 0.64, 1.5);
+      ctx.fillRect(sx + TILE * 0.3, sy + TILE * 0.2, TILE * 0.4, 1);
 
       ctx.fillStyle = theme.boltColor;
       ctx.beginPath();
-      ctx.arc(sx + 12, sy + 12, 2.1, 0, Math.PI * 2);
-      ctx.arc(sx + TILE - 12, sy + 12, 2.1, 0, Math.PI * 2);
-      ctx.arc(sx + 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
-      ctx.arc(sx + TILE - 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
+      ctx.arc(sx + 10, sy + 10, 1.5, 0, Math.PI * 2);
+      ctx.arc(sx + TILE - 10, sy + 10, 1.5, 0, Math.PI * 2);
+      ctx.arc(sx + 10, sy + TILE - 10, 1.5, 0, Math.PI * 2);
+      ctx.arc(sx + TILE - 10, sy + TILE - 10, 1.5, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.strokeStyle = theme.borderColor;
+      ctx.lineWidth = 0.5;
       ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
     }
   }
@@ -1750,28 +1748,28 @@ function drawSciWall(x, y, w, h, theme) {
   ctx.fillRect(x, y, w, h);
 
   ctx.fillStyle = theme.wallStripe;
-  for (let px = x + 6; px < x + w - 6; px += 18) {
-    ctx.fillRect(px, y + 5, 10, 2);
-    ctx.fillRect(px, y + h - 7, 10, 1.6);
+  for (let px = x + 8; px < x + w - 8; px += 24) {
+    ctx.fillRect(px, y + 4, 12, 1.2);
+    ctx.fillRect(px, y + h - 5.5, 12, 1);
   }
 
   ctx.fillStyle = theme.wallAccent;
-  for (let py = y + 8; py < y + h - 8; py += 20) {
-    ctx.fillRect(x + 5, py, 2, 10);
-    ctx.fillRect(x + w - 7, py, 2, 10);
+  for (let py = y + 10; py < y + h - 10; py += 28) {
+    ctx.fillRect(x + 4, py, 1.5, 12);
+    ctx.fillRect(x + w - 5.5, py, 1.5, 12);
   }
 
   ctx.fillStyle = theme.wallBolt;
-  for (let py = y + 14; py < y + h - 12; py += 28) {
+  for (let py = y + 16; py < y + h - 14; py += 36) {
     ctx.beginPath();
-    ctx.arc(x + 10, py, 2, 0, Math.PI * 2);
-    ctx.arc(x + w - 10, py, 2, 0, Math.PI * 2);
+    ctx.arc(x + 8, py, 1.5, 0, Math.PI * 2);
+    ctx.arc(x + w - 8, py, 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
   ctx.strokeStyle = theme.wallBorder;
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 }
 
 function drawKeyPickup(x, y) {
@@ -1842,21 +1840,20 @@ function drawDoorPanel(x, y, w, h, locked) {
   }
 
   // cross bars for reinforced look
-  ctx.strokeStyle = 'rgba(180, 140, 60, 0.5)';
-  ctx.lineWidth = 1.5;
-  const longDim = Math.max(w, h);
+  ctx.strokeStyle = 'rgba(180, 140, 60, 0.35)';
+  ctx.lineWidth = 1;
   if (h > w) {
-    for (let stripe = y + 8; stripe < y + h - 4; stripe += 12) {
+    for (let stripe = y + 10; stripe < y + h - 6; stripe += 16) {
       ctx.beginPath();
-      ctx.moveTo(x + 2, stripe);
-      ctx.lineTo(x + w - 2, stripe);
+      ctx.moveTo(x + 3, stripe);
+      ctx.lineTo(x + w - 3, stripe);
       ctx.stroke();
     }
   } else {
-    for (let stripe = x + 8; stripe < x + w - 4; stripe += 12) {
+    for (let stripe = x + 10; stripe < x + w - 6; stripe += 16) {
       ctx.beginPath();
-      ctx.moveTo(stripe, y + 2);
-      ctx.lineTo(stripe, y + h - 2);
+      ctx.moveTo(stripe, y + 3);
+      ctx.lineTo(stripe, y + h - 3);
       ctx.stroke();
     }
   }
@@ -1926,7 +1923,7 @@ function drawMapFeatures(camera) {
       case 'floor-grate': drawFloorGrate(s.x, s.y); break;
       case 'wall-banner': drawWallBanner(s.x, s.y); break;
       case 'floor-rug': drawFloorRug(s.x, s.y); break;
-      case 'wall-light': drawWallLight(s.x, s.y); break;
+      case 'lamp-post': drawLampPost(s.x, s.y); break;
       case 'ceiling-fan': drawCeilingFan(s.x, s.y); break;
       case 'potted-plant': drawPottedPlant(s.x, s.y); break;
       case 'crate-stack': drawCrateStack(s.x, s.y); break;
@@ -2403,28 +2400,34 @@ function drawFloorRug(x, y) {
   ctx.restore();
 }
 
-function drawWallLight(x, y) {
+function drawLampPost(x, y) {
   ctx.save();
   ctx.translate(x, y);
   const t = performance.now() * 0.003;
-  const flicker = 0.6 + Math.sin(t * 2.7) * 0.15 + Math.sin(t * 5.3) * 0.05;
-  // light cone
-  ctx.fillStyle = `rgba(255, 220, 150, ${flicker * 0.12})`;
-  ctx.beginPath();
-  ctx.moveTo(-4, 4); ctx.lineTo(-20, 32); ctx.lineTo(20, 32);
-  ctx.lineTo(4, 4); ctx.closePath(); ctx.fill();
-  // fixture
-  ctx.fillStyle = '#4a3a2a';
-  ctx.fillRect(-6, -4, 12, 8);
-  // bulb
-  ctx.fillStyle = `rgba(255, 240, 200, ${flicker})`;
-  ctx.beginPath(); ctx.arc(0, 4, 4, 0, Math.PI * 2); ctx.fill();
-  // glow
-  const glow = ctx.createRadialGradient(0, 4, 2, 0, 4, 16);
-  glow.addColorStop(0, `rgba(255, 220, 150, ${flicker * 0.4})`);
-  glow.addColorStop(1, 'rgba(255, 200, 100, 0)');
+  const flicker = 0.75 + Math.sin(t * 2.1) * 0.1 + Math.sin(t * 4.8) * 0.05;
+  // ground glow (circle of light on floor)
+  const glow = ctx.createRadialGradient(0, 0, 3, 0, 0, 28);
+  glow.addColorStop(0, `rgba(255, 220, 150, ${flicker * 0.22})`);
+  glow.addColorStop(0.6, `rgba(255, 200, 120, ${flicker * 0.08})`);
+  glow.addColorStop(1, 'rgba(255, 180, 80, 0)');
   ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(0, 4, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill();
+  // post base (top-down: small dark circle)
+  ctx.fillStyle = '#3a3a3a';
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  // post top rim
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.stroke();
+  // lamp head (bright center dot)
+  ctx.fillStyle = `rgba(255, 240, 200, ${flicker})`;
+  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  // inner bright glow
+  const inner = ctx.createRadialGradient(0, 0, 1, 0, 0, 8);
+  inner.addColorStop(0, `rgba(255, 240, 200, ${flicker * 0.6})`);
+  inner.addColorStop(1, 'rgba(255, 220, 150, 0)');
+  ctx.fillStyle = inner;
+  ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -3083,7 +3086,7 @@ function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
   ctx.shadowBlur = 0;
 
   // Preview panel background
-  const prevH = Math.round(cardH * 0.44);
+  const prevH = Math.round(cardH * 0.30);
   csRoundRect(cardX + 4, cardY + 4, cardW - 8, prevH, 7);
   ctx.fillStyle = isHovered ? 'rgba(30,45,65,0.55)' : 'rgba(14,20,34,0.6)';
   ctx.fill();
@@ -3129,7 +3132,7 @@ function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
   ];
 
   stats.forEach((s, si) => {
-    const sy = statsTop + si * Math.round(cardH * 0.1);
+    const sy = statsTop + si * Math.round(cardH * 0.07);
     ctx.fillStyle = '#6677aa';
     ctx.font = `${fsS}px monospace`;
     ctx.textAlign = 'left';
@@ -3142,7 +3145,7 @@ function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
   });
 
   // Description
-  const descTop = statsTop + 3 * Math.round(cardH * 0.1) + 8;
+  const descTop = statsTop + 3 * Math.round(cardH * 0.07) + 8;
   ctx.fillStyle = '#667788';
   const fsDesc = Math.max(9, Math.round(cardW * 0.065));
   ctx.font = `${fsDesc}px monospace`;

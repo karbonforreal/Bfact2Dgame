@@ -214,175 +214,340 @@ const LEVEL_THEMES = [
 
 const maps = [
   {
-    // Level 1: Z-shaped path — Spawn→Cargo(right)→Central Hall(down)→Airlock(down)→Exit(right,locked)
-    // Branch rooms: Dock Clamps (left of hall), Storage (right of hall)
+    // Level 1: Rooms connected by long hallways. Spawn room (top-left) → long hall east → Cargo room →
+    // long hall south → Central Hub → long hall east → Storage → long hall south → Exit room (locked)
     name: 'Docking Ring',
-    width: 30,
-    height: 20,
+    width: 44,
+    height: 30,
     walls: [
       // outer boundary
-      [0, 0, 30, 1], [0, 19, 30, 1], [0, 0, 1, 20], [29, 0, 1, 20],
-      // --- TOP ROOMS (y:1-5): Spawn (x:1-8) | Cargo Bay (x:10-28) ---
-      [9, 1, 1, 2], [9, 4, 1, 2],       // wall x=9, door gap at (9,3)
-      // --- HORIZONTAL DIVIDER y=6 ---
-      [1, 6, 3, 1], [6, 6, 6, 1], [14, 6, 15, 1],
-      // gaps at x:4-5 (Spawn→Dock) and x:12-13 (Cargo→Hall)
-      // --- MIDDLE ROOMS (y:7-11) ---
-      // Dock Clamps (x:1-6) | Central Hall (x:8-19) | Storage (x:21-28)
-      [7, 7, 1, 1], [7, 9, 1, 3],       // wall x=7, door gap at (7,8)
-      [20, 7, 1, 2], [20, 10, 1, 2],    // wall x=20, door gap at (20,9)
-      // --- HORIZONTAL DIVIDER y=12 ---
-      [1, 12, 11, 1], [14, 12, 15, 1],
-      // gap at x:12-13 (Hall→Airlock)
-      // --- BOTTOM ROOMS (y:13-18): Airlock (x:1-13) | Exit Room (x:15-28) ---
-      [14, 13, 1, 2], [14, 16, 1, 3]    // wall x=14, locked door gap at (14,15)
+      [0, 0, 44, 1], [0, 29, 44, 1], [0, 0, 1, 30], [43, 0, 1, 30],
+
+      // === SPAWN ROOM (x:1-10, y:1-8) — safe starting area ===
+      [1, 9, 10, 1],       // south wall of spawn room
+      // gap at x:5-6 for door into hallway south
+
+      // === HALLWAY SOUTH from spawn (x:5-6, y:10-15) — 2-tile wide, 6 long ===
+      [4, 10, 1, 6], [7, 10, 1, 6],
+
+      // === ARMORY ROOM (x:1-10, y:16-22) ===
+      [1, 16, 4, 1], [7, 16, 4, 1],  // north wall, gap at x:5-6
+      [1, 23, 10, 1],                  // south wall
+      [11, 16, 1, 3], [11, 20, 1, 3], // east wall, door gap at (11,19)
+
+      // === HALLWAY EAST from armory (x:12-19, y:19) — 8 tiles long, 2 wide ===
+      [12, 18, 8, 1], [12, 20, 8, 1],
+
+      // === CENTRAL HUB (x:20-30, y:15-23) — large room ===
+      [20, 14, 11, 1],                  // north wall
+      [20, 24, 11, 1],                  // south wall
+      [20, 15, 1, 3], [20, 19, 1, 4],  // west wall, gap at (20,18) unused since hallway enters at y:19
+      [31, 15, 1, 4], [31, 20, 1, 4],  // east wall, door gap at (31,19)
+
+      // === HALLWAY EAST from hub (x:32-38, y:19) — 7 tiles long ===
+      [32, 18, 7, 1], [32, 20, 7, 1],
+
+      // === EXIT ROOM (x:33-42, y:22-28) — locked door access ===
+      [33, 21, 6, 1], [40, 21, 3, 1],  // north wall, door gap at (39,21)
+      [32, 22, 1, 7],                    // west wall
+      // south + east use outer boundary
+
+      // === HALLWAY NORTH from spawn room to Observation (x:5-6, y:1 connects via spawn room ceiling) ===
+      // Spawn room already at top
+
+      // === SIDE ROOM: Dock Clamps (x:14-22, y:1-8) ===
+      [11, 1, 3, 1], [11, 2, 1, 7], // west wall
+      [14, 9, 9, 1],                  // south wall
+      [23, 1, 1, 4], [23, 6, 1, 3],  // east wall, door gap at (23,5)
+
+      // === HALLWAY from spawn to Dock Clamps (x:11-13, y:4) — 3-wide hallway ===
+      [11, 3, 3, 1], [11, 5, 1, 4], // partial walls channeling
+
+      // === HALLWAY EAST from Dock Clamps (x:24-30, y:5) — 7 long ===
+      [24, 4, 7, 1], [24, 6, 7, 1],
+
+      // === OBSERVATION ROOM (x:31-42, y:1-10) ===
+      [31, 4, 1, 2], [31, 7, 1, 4],  // west wall with door gap at (31,6)
+      [31, 11, 12, 1],                 // south wall
+
+      // === Connecting hallway from Obs to Exit area (x:39, y:12-20) ===
+      [38, 12, 1, 3], [38, 16, 1, 5],  // west wall, door gap at (38,15)
+      [40, 12, 1, 9],                   // east wall
     ],
     doors: [
-      { x: 9, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 7, y: 8, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 20, y: 9, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 14, y: 15, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }
+      { x: 5, y: 9, w: 2, h: 1, locked: false, orientation: 'h', swingDir: 1 },    // spawn→south hallway
+      { x: 11, y: 19, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // armory→east hallway
+      { x: 31, y: 19, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // hub→east hallway
+      { x: 23, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // dock→east hallway
+      { x: 31, y: 6, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },   // obs room entrance
+      { x: 38, y: 15, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // obs→exit connector
+      { x: 39, y: 21, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }     // locked exit door
     ],
-    keyPickup: { x: 24.5, y: 3.5 },
+    keyPickup: { x: 36.5, y: 5.5 },
     features: [
-      { type: 'docking-clamp', x: 3.5, y: 9.5 },
-      { type: 'airlock-chamber', x: 7, y: 15.5 }
+      { type: 'docking-clamp', x: 18, y: 5 },
+      { type: 'airlock-chamber', x: 25.5, y: 19.5 },
+      { type: 'painting-landscape', x: 3, y: 3 },
+      { type: 'painting-portrait', x: 8, y: 3 },
+      { type: 'wall-terminal', x: 2, y: 18 },
+      { type: 'wall-pipes', x: 9, y: 20 },
+      { type: 'floor-grate', x: 5.5, y: 12.5 },
+      { type: 'painting-abstract', x: 36, y: 3 },
+      { type: 'wall-banner', x: 25, y: 16 },
+      { type: 'floor-rug', x: 25, y: 19 },
+      { type: 'wall-light', x: 4, y: 10.5 },
+      { type: 'wall-light', x: 7, y: 10.5 },
+      { type: 'ceiling-fan', x: 5.5, y: 5 },
+      { type: 'potted-plant', x: 2, y: 8 },
+      { type: 'potted-plant', x: 9, y: 8 },
+      { type: 'crate-stack', x: 22, y: 22 },
+      { type: 'crate-stack', x: 28, y: 16 },
+      { type: 'wall-clock', x: 37, y: 8 }
     ],
     enemies: [
-      { x: 24, y: 4, hp: 55 },
-      { x: 24, y: 9, hp: 65, type: 'shield' },
-      { x: 15, y: 16, hp: 60, type: 'flanker' }
+      // All enemies far from spawn (spawn is at x:5.5, y:4.5)
+      { x: 25, y: 19, hp: 55 },        // Central Hub
+      { x: 28, y: 17, hp: 65, type: 'shield' }, // Central Hub
+      { x: 38, y: 25, hp: 60, type: 'flanker' }  // Exit room area
     ],
     pickups: [
-      { x: 3.5, y: 3.5, type: 'ammo-handgun', value: 15 },
-      { x: 14.5, y: 10.5, type: 'health', value: 20 },
-      { x: 25.5, y: 10.5, type: 'armor', value: 20 }
+      { x: 5.5, y: 19.5, type: 'ammo-handgun', value: 15 },  // armory
+      { x: 25.5, y: 17.5, type: 'health', value: 20 },       // hub
+      { x: 37.5, y: 8.5, type: 'armor', value: 20 }          // observation
     ],
-    spawn: { x: 4.5, y: 3.5 },
-    exit: { x: 22.5, y: 15.5 }
+    spawn: { x: 5.5, y: 4.5 },
+    exit: { x: 38.5, y: 25.5 }
   },
   {
-    // Level 2: S-shaped path — Spawn→DataHall(right)→Server(right)→corridor(down)→
-    //   side room→left room→Core Room→locked exit sub-room
-    // Bottom path: corridor(down)→Storage→Terminal→Archive
+    // Level 2: Larger layout with rooms and long connecting hallways
+    // Spawn (top-left) → long hall → Library → hall → Server Room → hall → Core Room → locked exit
     name: 'Core Archive',
-    width: 32,
-    height: 22,
+    width: 48,
+    height: 34,
     walls: [
       // outer boundary
-      [0, 0, 32, 1], [0, 21, 32, 1], [0, 0, 1, 22], [31, 0, 1, 22],
-      // --- TOP ROOMS (y:1-6): Spawn (x:1-9) | Data Hall (x:11-20) | Server Bank (x:22-30) ---
-      [10, 1, 1, 2], [10, 4, 1, 3],     // wall x=10, door gap at (10,3)
-      [21, 1, 1, 2], [21, 4, 1, 3],     // wall x=21, door gap at (21,3)
-      // --- HORIZONTAL DIVIDER y=7 ---
-      [1, 7, 21, 1], [24, 7, 7, 1],
-      // gap at x:22-23 (Server→right corridor down)
-      // --- MIDDLE SECTION (y:8-14) ---
-      // Left room (x:1-10) | Core room (x:12-20) | corridor (x:22-23) | Side room (x:25-30)
-      [21, 8, 1, 7],                     // left wall of corridor
-      [24, 8, 1, 3], [24, 12, 1, 3],    // right wall of corridor, door gap at (24,11)
-      [11, 8, 1, 2], [11, 11, 1, 4],    // left/core divider, door gap at (11,10)
-      // Core room exit partition (y=11): locked door separates upper core from exit area
-      [12, 11, 3, 1], [16, 11, 5, 1],   // partition in core room, locked door gap at (15,11)
-      // --- HORIZONTAL DIVIDER y=15 ---
-      [1, 15, 7, 1], [10, 15, 12, 1], [24, 15, 7, 1],
-      // gaps at x:8-9 (left room→Archive) and x:22-23 (corridor→Storage)
-      // --- BOTTOM ROOMS (y:16-20): Archive (x:1-10) | Terminal (x:12-20) | Storage (x:22-30) ---
-      [11, 16, 1, 2], [11, 19, 1, 2],   // Archive/Terminal wall, door gap at (11,18)
-      [21, 16, 1, 2], [21, 19, 1, 2]    // Terminal/Storage wall, door gap at (21,18)
+      [0, 0, 48, 1], [0, 33, 48, 1], [0, 0, 1, 34], [47, 0, 1, 34],
+
+      // === SPAWN ROOM (x:1-10, y:1-9) ===
+      [11, 1, 1, 4], [11, 6, 1, 4],  // east wall, door gap at (11,5)
+      [1, 10, 10, 1],                  // south wall
+
+      // === HALLWAY EAST from spawn (x:12-20, y:5) — 9 tiles long, 2 wide ===
+      [12, 4, 9, 1], [12, 6, 9, 1],
+
+      // === LIBRARY ROOM (x:21-32, y:1-10) ===
+      [21, 4, 1, 2], [21, 7, 1, 4],  // west wall, door gap at (21,6) for alternate
+      [33, 1, 1, 4], [33, 6, 1, 5],   // east wall, door gap at (33,5)
+      [21, 11, 12, 1],                 // south wall
+
+      // === HALLWAY EAST from library (x:34-40, y:5) — 7 tiles ===
+      [34, 4, 7, 1], [34, 6, 7, 1],
+
+      // === SERVER ROOM (x:35-46, y:8-16) ===
+      [34, 8, 1, 4], [34, 13, 1, 4],  // west wall, door gap at (34,12)
+      [35, 7, 12, 1],                   // north wall
+      [35, 17, 12, 1],                  // south wall
+
+      // === HALLWAY SOUTH from server (x:39-40, y:18-24) — 7 tiles long ===
+      [38, 18, 1, 7], [41, 18, 1, 7],
+
+      // === CENTRAL ARCHIVE (x:28-42, y:22-32) — large room ===
+      [27, 22, 1, 4], [27, 27, 1, 6], // west wall, door gap at (27,26)
+      [28, 21, 10, 1], [41, 21, 2, 1],  // north wall gap for hallway
+      [43, 22, 1, 11],                  // east wall
+
+      // === HALLWAY WEST from archive (x:18-26, y:26) — 9 tiles ===
+      [18, 25, 9, 1], [18, 27, 9, 1],
+
+      // === STUDY ROOM (x:1-16, y:22-32) ===
+      [17, 22, 1, 3], [17, 26, 1, 7],  // east wall, door gap at (17,25)
+      [1, 21, 16, 1],                    // north wall
+
+      // === HALLWAY connecting spawn south wall to study (x:5-6, y:11-20) ===
+      [4, 11, 1, 10], [7, 11, 1, 10],
+
+      // === PASSAGE from library south to hallway (x:26, y:12-20) ===
+      [25, 12, 1, 4], [25, 17, 1, 4],  // west wall, door gap at (25,16)
+      [26, 12, 1, 9],                    // east partial
+
+      // === DATA CORE SUB-ROOM in archive (x:35-42, y:28-32) — locked ===
+      [35, 27, 3, 1], [39, 27, 4, 1],  // partition, locked door gap at (38,27)
     ],
     doors: [
-      { x: 10, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 21, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 10, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 24, y: 11, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 21, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 15, y: 11, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }
+      { x: 11, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // spawn→east hall
+      { x: 33, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // library→east hall
+      { x: 34, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // server west door
+      { x: 27, y: 26, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // archive→west hall
+      { x: 17, y: 25, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // study east door
+      { x: 25, y: 16, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // library south passage
+      { x: 38, y: 27, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }     // locked exit sub-room
     ],
-    keyPickup: { x: 26.5, y: 3.5 },
+    keyPickup: { x: 40.5, y: 12.5 },
     features: [
-      { type: 'data-core', x: 16, y: 9.5 },
-      { type: 'server-racks', x: 26, y: 3.5 }
+      { type: 'data-core', x: 38.5, y: 30 },
+      { type: 'server-racks', x: 40, y: 12 },
+      { type: 'painting-landscape', x: 3, y: 3 },
+      { type: 'painting-portrait', x: 8, y: 3 },
+      { type: 'painting-abstract', x: 26, y: 3 },
+      { type: 'wall-bookshelf', x: 23, y: 3 },
+      { type: 'wall-bookshelf', x: 30, y: 3 },
+      { type: 'wall-bookshelf', x: 23, y: 9 },
+      { type: 'floor-rug', x: 27, y: 5 },
+      { type: 'wall-terminal', x: 37, y: 9 },
+      { type: 'wall-terminal', x: 44, y: 9 },
+      { type: 'wall-pipes', x: 37, y: 15 },
+      { type: 'floor-grate', x: 39.5, y: 21 },
+      { type: 'wall-banner', x: 35, y: 23 },
+      { type: 'wall-light', x: 12, y: 4.5 },
+      { type: 'wall-light', x: 18, y: 4.5 },
+      { type: 'ceiling-fan', x: 5.5, y: 5 },
+      { type: 'potted-plant', x: 2, y: 9 },
+      { type: 'potted-plant', x: 9, y: 9 },
+      { type: 'crate-stack', x: 3, y: 28 },
+      { type: 'wall-clock', x: 10, y: 23 },
+      { type: 'painting-landscape', x: 5, y: 23 },
+      { type: 'potted-plant', x: 15, y: 22 },
+      { type: 'floor-rug', x: 8, y: 27 }
     ],
     enemies: [
-      { x: 28, y: 4, hp: 75, type: 'shield' },
-      { x: 27, y: 11, hp: 65 },
-      { x: 16, y: 13, hp: 70 },
-      { x: 26, y: 18, hp: 65 },
-      { x: 6, y: 18, hp: 50, type: 'dog' }
+      // Enemies far from spawn (spawn at 5.5, 5.5)
+      { x: 40, y: 12, hp: 75, type: 'shield' },   // server room
+      { x: 36, y: 15, hp: 65 },                     // server room
+      { x: 35, y: 26, hp: 70 },                     // central archive
+      { x: 40, y: 25, hp: 65 },                     // central archive
+      { x: 8, y: 28, hp: 50, type: 'dog' }          // study room
     ],
     pickups: [
-      { x: 2.5, y: 18.5, type: 'ammo-handgun', value: 20 },
-      { x: 26.5, y: 1.5, type: 'health', value: 25 },
-      { x: 7.5, y: 4.5, type: 'health', value: 20 },
-      { x: 16.5, y: 13.5, type: 'ammo-shotgun', value: 4 },
-      { x: 6.5, y: 9.5, type: 'armor', value: 25 }
+      { x: 8.5, y: 26.5, type: 'ammo-handgun', value: 20 },   // study
+      { x: 42.5, y: 9.5, type: 'health', value: 25 },          // server
+      { x: 7.5, y: 7.5, type: 'health', value: 20 },           // spawn room
+      { x: 35.5, y: 30.5, type: 'ammo-shotgun', value: 4 },    // archive
+      { x: 26.5, y: 5.5, type: 'armor', value: 25 }            // library
     ],
-    spawn: { x: 5.5, y: 3.5 },
-    exit: { x: 16.5, y: 13.5 }
+    spawn: { x: 5.5, y: 5.5 },
+    exit: { x: 39.5, y: 30.5 }
   },
   {
-    // Level 3: Snake path — Spawn→Decon(right)→Monitor(right)→corridor(down-right)→
-    //   Cooling→Reactor(left)→Maintenance(left)→corridor(down-left)→
-    //   Utility→Control(right)→locked door→Exit(right)
+    // Level 3: Snake-path rooms connected by long corridors
+    // Spawn → long hall → Decon → long hall → Reactor → long hall → Cooling → long hall → Exit
     name: 'Reactor Vault',
-    width: 34,
-    height: 24,
+    width: 50,
+    height: 38,
     walls: [
       // outer boundary
-      [0, 0, 34, 1], [0, 23, 34, 1], [0, 0, 1, 24], [33, 0, 1, 24],
-      // --- TOP ROOMS (y:1-6): Spawn (x:1-10) | Decon (x:12-22) | Monitor (x:24-32) ---
-      [11, 1, 1, 2], [11, 4, 1, 3],     // wall x=11, door gap at (11,3)
-      [23, 1, 1, 2], [23, 4, 1, 3],     // wall x=23, door gap at (23,3)
-      // --- HORIZONTAL DIVIDER y=7 and y=8 (corridor gap x:25-27) ---
-      [1, 7, 24, 1], [28, 7, 5, 1],
-      [1, 8, 24, 1], [28, 8, 5, 1],
-      // gap at x:25-27 (Monitor→Cooling corridor, 3 tiles wide)
-      // --- MIDDLE ROOMS (y:9-15) ---
-      // Maintenance (x:1-10) | Reactor (x:12-22) | Cooling (x:24-32)
-      [11, 9, 1, 3], [11, 13, 1, 3],    // wall x=11, door gap at (11,12)
-      [23, 9, 1, 3], [23, 13, 1, 3],    // wall x=23, door gap at (23,12)
-      // --- HORIZONTAL DIVIDER y=16 and y=17 (corridor gap x:7-9) ---
-      [1, 16, 6, 1], [10, 16, 23, 1],
-      [1, 17, 6, 1], [10, 17, 23, 1],
-      // gap at x:7-9 (Maintenance→Utility corridor, 3 tiles wide)
-      // --- BOTTOM ROOMS (y:18-22) ---
-      // Utility (x:1-10) | Control (x:12-22) | Exit (x:24-32)
-      [11, 18, 1, 2], [11, 21, 1, 2],   // wall x=11, door gap at (11,20)
-      [23, 18, 1, 2], [23, 21, 1, 2]    // wall x=23, locked door gap at (23,20)
+      [0, 0, 50, 1], [0, 37, 50, 1], [0, 0, 1, 38], [49, 0, 1, 38],
+
+      // === SPAWN ROOM (x:1-12, y:1-9) — safe area, no enemies ===
+      [13, 1, 1, 4], [13, 6, 1, 4],  // east wall, door gap at (13,5)
+      [1, 10, 12, 1],                  // south wall
+
+      // === HALLWAY EAST from spawn (x:14-23, y:5) — 10 tiles long ===
+      [14, 4, 10, 1], [14, 6, 10, 1],
+
+      // === DECON ROOM (x:24-36, y:1-10) ===
+      [24, 4, 1, 2], [24, 7, 1, 4],  // west wall
+      [37, 1, 1, 4], [37, 6, 1, 5],   // east wall, door gap at (37,5)
+      [24, 11, 13, 1],                  // south wall
+
+      // === HALLWAY from decon going south (x:30-31, y:12-19) — 8 tiles ===
+      [29, 12, 1, 8], [32, 12, 1, 8],
+
+      // === ARMORY SIDE ROOM (x:38-48, y:1-10) ===
+      [38, 5, 1, 2], [38, 8, 1, 3],   // west wall, door gap at (38,7) leads from hallway
+      [38, 11, 11, 1],                  // south wall
+
+      // === HALLWAY from decon east (x:38-48, y:5-6) — connects decon→armory, 2-wide ===
+      // actually use the door gap at (37,5) and armory door at (38,7)
+
+      // === REACTOR ROOM (x:20-34, y:20-30) — large center room ===
+      [19, 20, 1, 4], [19, 25, 1, 6], // west wall, door gap at (19,24)
+      [20, 19, 15, 1],                  // north wall
+      [35, 20, 1, 4], [35, 25, 1, 6],  // east wall, door gap at (35,24)
+      [20, 31, 15, 1],                  // south wall
+
+      // === HALLWAY WEST from reactor (x:10-18, y:24) — 9 tiles ===
+      [10, 23, 9, 1], [10, 25, 9, 1],
+
+      // === MAINTENANCE ROOM (x:1-9, y:20-30) ===
+      [1, 19, 9, 1],                    // north wall
+      [10, 20, 1, 3], [10, 24, 1, 7],  // east wall, door gap for hallway
+      [1, 31, 9, 1],                    // south wall
+
+      // === HALLWAY EAST from reactor (x:36-43, y:24) — 8 tiles ===
+      [36, 23, 8, 1], [36, 25, 8, 1],
+
+      // === COOLING ROOM (x:38-48, y:20-30) ===
+      [37, 20, 12, 1],                  // north wall
+      [37, 31, 12, 1],                  // south wall
+      [44, 20, 1, 3], [44, 24, 1, 7],  // partition reuse for inner wall
+
+      // === HALLWAY SOUTH from maintenance (x:5-6, y:32-36) ===
+      [4, 32, 1, 5], [7, 32, 1, 5],
+
+      // === CONTROL ROOM (x:1-14, y:32-36) ===
+      // uses hallway gap and outer boundary
+      [15, 32, 1, 2], [15, 35, 1, 2],  // east wall, door gap at (15,34)
+
+      // === HALLWAY EAST from control (x:16-24, y:34) — 9 tiles ===
+      [16, 33, 9, 1], [16, 35, 9, 1],
+
+      // === EXIT ROOM (x:25-42, y:32-36) — locked door ===
+      [25, 32, 1, 2], [25, 35, 1, 2],  // west wall, locked door gap at (25,34)
     ],
     doors: [
-      { x: 11, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 23, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 23, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 20, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 23, y: 20, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }
+      { x: 13, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // spawn east
+      { x: 37, y: 5, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },    // decon east
+      { x: 19, y: 24, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // reactor west
+      { x: 35, y: 24, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },   // reactor east
+      { x: 15, y: 34, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },  // control east
+      { x: 25, y: 34, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }     // locked exit
     ],
-    keyPickup: { x: 5.5, y: 12.5 },
+    keyPickup: { x: 5.5, y: 25.5 },
     features: [
-      { type: 'reactor-core', x: 17, y: 12 },
-      { type: 'coolant-pipes', x: 28, y: 12 }
+      { type: 'reactor-core', x: 27, y: 25 },
+      { type: 'coolant-pipes', x: 42, y: 25 },
+      { type: 'painting-landscape', x: 3, y: 3 },
+      { type: 'painting-portrait', x: 10, y: 3 },
+      { type: 'painting-abstract', x: 30, y: 3 },
+      { type: 'wall-terminal', x: 40, y: 3 },
+      { type: 'wall-terminal', x: 46, y: 3 },
+      { type: 'wall-pipes', x: 3, y: 22 },
+      { type: 'wall-pipes', x: 7, y: 22 },
+      { type: 'floor-grate', x: 30.5, y: 15.5 },
+      { type: 'wall-banner', x: 27, y: 20 },
+      { type: 'wall-banner', x: 32, y: 20 },
+      { type: 'wall-light', x: 14, y: 4.5 },
+      { type: 'wall-light', x: 22, y: 4.5 },
+      { type: 'ceiling-fan', x: 6.5, y: 5 },
+      { type: 'potted-plant', x: 2, y: 9 },
+      { type: 'potted-plant', x: 11, y: 9 },
+      { type: 'crate-stack', x: 40, y: 28 },
+      { type: 'crate-stack', x: 46, y: 22 },
+      { type: 'wall-clock', x: 8, y: 33 },
+      { type: 'floor-rug', x: 27, y: 25 },
+      { type: 'painting-landscape', x: 30, y: 33 },
+      { type: 'wall-bookshelf', x: 3, y: 33 },
+      { type: 'potted-plant', x: 13, y: 32 }
     ],
     enemies: [
-      { x: 20, y: 5, hp: 90 },
-      { x: 28, y: 4, hp: 90, type: 'shield' },
-      { x: 5, y: 13, hp: 85 },
-      { x: 17, y: 10, hp: 95 },
-      { x: 17, y: 14, hp: 95, type: 'flanker' },
-      { x: 28, y: 12, hp: 100 },
-      { x: 17, y: 20, hp: 105 },
-      { x: 5, y: 20, hp: 70, type: 'dog' }
+      // All enemies far from spawn (spawn at 6.5, 5.5)
+      { x: 30, y: 5, hp: 90 },                     // decon room
+      { x: 43, y: 5, hp: 90, type: 'shield' },     // armory
+      { x: 5, y: 25, hp: 85 },                      // maintenance
+      { x: 27, y: 23, hp: 95 },                     // reactor
+      { x: 32, y: 27, hp: 95, type: 'flanker' },   // reactor
+      { x: 42, y: 25, hp: 100 },                    // cooling
+      { x: 33, y: 34, hp: 105 },                    // exit room
+      { x: 8, y: 35, hp: 70, type: 'dog' }          // control room
     ],
     pickups: [
-      { x: 2.5, y: 20.5, type: 'ammo-sniper', value: 3 },
-      { x: 17.5, y: 3.5, type: 'health', value: 25 },
-      { x: 17.5, y: 19.5, type: 'armor', value: 35 },
-      { x: 28.5, y: 3.5, type: 'ammo-handgun', value: 15 }
+      { x: 8.5, y: 34.5, type: 'ammo-sniper', value: 3 },     // control
+      { x: 30.5, y: 7.5, type: 'health', value: 25 },          // decon
+      { x: 27.5, y: 28.5, type: 'armor', value: 35 },          // reactor
+      { x: 43.5, y: 3.5, type: 'ammo-handgun', value: 15 }     // armory
     ],
-    spawn: { x: 5.5, y: 3.5 },
-    exit: { x: 28.5, y: 20.5 }
+    spawn: { x: 6.5, y: 5.5 },
+    exit: { x: 35.5, y: 34.5 }
   }
 ];
 
@@ -449,6 +614,7 @@ const game = {
   pickups: [],
   doors: [],
   hasKey: false,
+  doorInteract: false,
   startGrace: 0,
   keys: new Set(),
   mouse: { x: canvas.width / 2, y: canvas.height / 2, down: false },
@@ -1347,7 +1513,8 @@ function update(dt) {
     }
   }
 
-  // door opening: unlocked doors swing open, hold 2s, then swing closed. locked doors stay open.
+  // door opening: player must press SPACE near a door. Doors hold open 3s then close.
+  // Enemies cannot activate doors and cannot get stuck in closing doors.
   for (const door of game.doors) {
     const doorCenterX = (door.x + door.w / 2) * TILE;
     const doorCenterY = (door.y + door.h / 2) * TILE;
@@ -1360,16 +1527,32 @@ function update(dt) {
         door.openAnim = Math.min(1, door.openAnim + dt * 2);
         if (door.openAnim >= 1) {
           door.phase = 'hold';
-          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 2;
+          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 3;
         }
       } else if (phase === 'hold') {
         if (!door.locked) {
           if (dist < TILE * 2) {
-            door.holdTimer = 2; // reset hold timer while player is nearby
+            door.holdTimer = 3; // reset hold timer while player is nearby
           } else {
             door.holdTimer -= dt;
             if (door.holdTimer <= 0) {
-              door.phase = 'closing';
+              // Check no enemy is inside the door tile before closing
+              const doorRect = { x: door.x * TILE, y: door.y * TILE, w: door.w * TILE, h: door.h * TILE };
+              let enemyInDoor = false;
+              for (const enemy of game.enemies) {
+                if (enemy.hp <= 0) continue;
+                if (circleRectCollision(enemy.x, enemy.y, enemy.radius + 4, doorRect)) {
+                  enemyInDoor = true;
+                  break;
+                }
+              }
+              // Also check player
+              if (circleRectCollision(p.x, p.y, PLAYER_RADIUS, doorRect)) enemyInDoor = true;
+              if (!enemyInDoor) {
+                door.phase = 'closing';
+              } else {
+                door.holdTimer = 0.5; // retry shortly
+              }
             }
           }
         }
@@ -1380,33 +1563,37 @@ function update(dt) {
           door.phase = 'closed';
           game.navGridCache.clear();
         }
-        // if player approaches while closing, swing back open
-        if (dist < TILE * 1.5 && !door.locked) {
-          door.phase = 'opening';
-        }
       }
       continue;
     }
 
+    // Show prompt when near a closed door
     if (dist < TILE * 1.5) {
-      if (!door.locked) {
-        door.open = true;
-        door.phase = 'opening';
-        door.openAnim = 0;
-        game.navGridCache.clear();
-        game.message = 'Door opened.';
-      } else if (game.hasKey) {
-        door.open = true;
-        door.phase = 'opening';
-        door.openAnim = 0;
-        game.navGridCache.clear();
-        game.message = 'Door unlocked!';
-      } else if (!game.doorMsgCooldown || game.doorMsgCooldown <= 0) {
-        game.message = 'Door is locked. Find the key!';
-        game.doorMsgCooldown = 1.5;
+      door.showPrompt = true;
+      if (game.doorInteract) {
+        game.doorInteract = false;
+        if (!door.locked) {
+          door.open = true;
+          door.phase = 'opening';
+          door.openAnim = 0;
+          game.navGridCache.clear();
+          game.message = 'Door opened.';
+        } else if (game.hasKey) {
+          door.open = true;
+          door.phase = 'opening';
+          door.openAnim = 0;
+          game.navGridCache.clear();
+          game.message = 'Door unlocked!';
+        } else if (!game.doorMsgCooldown || game.doorMsgCooldown <= 0) {
+          game.message = 'Door is locked. Find the key!';
+          game.doorMsgCooldown = 1.5;
+        }
       }
+    } else {
+      door.showPrompt = false;
     }
   }
+  game.doorInteract = false; // consume the interact flag
   if (game.doorMsgCooldown > 0) game.doorMsgCooldown -= dt;
 
   game.bullets = game.bullets.filter((b) => {
@@ -1731,6 +1918,20 @@ function drawMapFeatures(camera) {
       case 'server-racks': drawServerRacks(s.x, s.y); break;
       case 'reactor-core': drawReactorCore(s.x, s.y); break;
       case 'coolant-pipes': drawCoolantPipes(s.x, s.y); break;
+      case 'painting-landscape': drawPaintingLandscape(s.x, s.y); break;
+      case 'painting-portrait': drawPaintingPortrait(s.x, s.y); break;
+      case 'painting-abstract': drawPaintingAbstract(s.x, s.y); break;
+      case 'wall-terminal': drawWallTerminal(s.x, s.y); break;
+      case 'wall-pipes': drawWallPipes(s.x, s.y); break;
+      case 'floor-grate': drawFloorGrate(s.x, s.y); break;
+      case 'wall-banner': drawWallBanner(s.x, s.y); break;
+      case 'floor-rug': drawFloorRug(s.x, s.y); break;
+      case 'wall-light': drawWallLight(s.x, s.y); break;
+      case 'ceiling-fan': drawCeilingFan(s.x, s.y); break;
+      case 'potted-plant': drawPottedPlant(s.x, s.y); break;
+      case 'crate-stack': drawCrateStack(s.x, s.y); break;
+      case 'wall-clock': drawWallClock(s.x, s.y); break;
+      case 'wall-bookshelf': drawWallBookshelf(s.x, s.y); break;
     }
   }
 }
@@ -1975,6 +2176,398 @@ function drawCoolantPipes(x, y) {
   ctx.restore();
 }
 
+// === DECORATIVE ROOM DETAILS ===
+
+function drawPaintingLandscape(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // frame
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(-24, -18, 48, 36);
+  ctx.strokeStyle = '#d4a44a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-24, -18, 48, 36);
+  // canvas background — sky
+  const sky = ctx.createLinearGradient(-20, -14, -20, 4);
+  sky.addColorStop(0, '#4a7ab5');
+  sky.addColorStop(0.6, '#7ab5d4');
+  sky.addColorStop(1, '#c4daa4');
+  ctx.fillStyle = sky;
+  ctx.fillRect(-20, -14, 40, 28);
+  // mountains
+  ctx.fillStyle = '#5a7a5a';
+  ctx.beginPath();
+  ctx.moveTo(-20, 8); ctx.lineTo(-8, -6); ctx.lineTo(4, 4); ctx.lineTo(14, -4); ctx.lineTo(20, 8);
+  ctx.closePath(); ctx.fill();
+  // ground
+  ctx.fillStyle = '#4a6a3a';
+  ctx.fillRect(-20, 8, 40, 6);
+  // sun
+  ctx.fillStyle = '#ffe866';
+  ctx.beginPath(); ctx.arc(12, -8, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPaintingPortrait(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // ornate frame
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(-20, -24, 40, 48);
+  ctx.strokeStyle = '#c89a44';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(-20, -24, 40, 48);
+  ctx.strokeStyle = '#a07a30';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-17, -21, 34, 42);
+  // dark background
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(-15, -19, 30, 38);
+  // face oval
+  const faceGrad = ctx.createRadialGradient(0, -4, 2, 0, -4, 12);
+  faceGrad.addColorStop(0, '#e8c8a0');
+  faceGrad.addColorStop(1, '#b8905a');
+  ctx.fillStyle = faceGrad;
+  ctx.beginPath(); ctx.ellipse(0, -4, 8, 11, 0, 0, Math.PI * 2); ctx.fill();
+  // eyes
+  ctx.fillStyle = '#2a3a4a';
+  ctx.fillRect(-4, -7, 2.5, 2); ctx.fillRect(1.5, -7, 2.5, 2);
+  // collar
+  ctx.fillStyle = '#4a5a8a';
+  ctx.fillRect(-10, 8, 20, 10);
+  ctx.restore();
+}
+
+function drawPaintingAbstract(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // frame
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(-22, -18, 44, 36);
+  ctx.strokeStyle = '#8a8aaa';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-22, -18, 44, 36);
+  // abstract shapes
+  ctx.fillStyle = 'rgba(200, 60, 80, 0.7)';
+  ctx.beginPath(); ctx.arc(-6, -4, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(60, 120, 200, 0.6)';
+  ctx.fillRect(2, -8, 14, 14);
+  ctx.fillStyle = 'rgba(220, 180, 40, 0.65)';
+  ctx.beginPath();
+  ctx.moveTo(-14, 10); ctx.lineTo(-4, -6); ctx.lineTo(6, 10);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-16, 4); ctx.bezierCurveTo(-8, -12, 8, 16, 16, 0); ctx.stroke();
+  ctx.restore();
+}
+
+function drawWallTerminal(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.002;
+  // terminal body
+  ctx.fillStyle = '#1a2233';
+  ctx.fillRect(-16, -20, 32, 40);
+  ctx.strokeStyle = '#3a5a7a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-16, -20, 32, 40);
+  // screen
+  const screenGlow = 0.4 + Math.sin(t) * 0.1;
+  ctx.fillStyle = `rgba(30, 80, 60, ${screenGlow})`;
+  ctx.fillRect(-12, -16, 24, 20);
+  // scan lines
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = `rgba(0, 255, 120, ${0.15 + Math.sin(t + i * 0.5) * 0.08})`;
+    ctx.fillRect(-11, -15 + i * 2.5, 22, 1);
+  }
+  // blinking cursor
+  if (Math.sin(t * 3) > 0) {
+    ctx.fillStyle = '#00ff88';
+    ctx.fillRect(-8, -4, 5, 2);
+  }
+  // keyboard area
+  ctx.fillStyle = '#2a3a4a';
+  ctx.fillRect(-10, 6, 20, 10);
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 5; c++) {
+      ctx.fillStyle = '#4a5a6a';
+      ctx.fillRect(-8 + c * 4, 7 + r * 3, 3, 2);
+    }
+  }
+  ctx.restore();
+}
+
+function drawWallPipes(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // vertical pipes
+  ctx.strokeStyle = '#5a7080';
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-12, -28); ctx.lineTo(-12, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -28); ctx.lineTo(0, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(12, -28); ctx.lineTo(12, 28); ctx.stroke();
+  // pipe highlights
+  ctx.strokeStyle = '#7a9aaa';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-13.5, -28); ctx.lineTo(-13.5, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-1.5, -28); ctx.lineTo(-1.5, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10.5, -28); ctx.lineTo(10.5, 28); ctx.stroke();
+  // connectors
+  ctx.fillStyle = '#6a8090';
+  ctx.fillRect(-15, -8, 7, 4);
+  ctx.fillRect(-3, 4, 7, 4);
+  ctx.fillRect(9, -14, 7, 4);
+  // valve wheel
+  ctx.strokeStyle = '#aa6644';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, -18, 5, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#cc8855';
+  ctx.beginPath(); ctx.arc(0, -18, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawFloorGrate(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(40, 50, 60, 0.6)';
+  ctx.fillRect(-24, -24, 48, 48);
+  ctx.strokeStyle = 'rgba(80, 100, 120, 0.5)';
+  ctx.lineWidth = 1;
+  // grate lines
+  for (let i = -20; i <= 20; i += 8) {
+    ctx.beginPath(); ctx.moveTo(i, -22); ctx.lineTo(i, 22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-22, i); ctx.lineTo(22, i); ctx.stroke();
+  }
+  // bolts at corners
+  ctx.fillStyle = 'rgba(120, 140, 160, 0.4)';
+  ctx.beginPath(); ctx.arc(-20, -20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(20, -20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-20, 20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(20, 20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawWallBanner(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // banner pole
+  ctx.fillStyle = '#8a7a5a';
+  ctx.fillRect(-20, -22, 40, 3);
+  // fabric
+  const t = performance.now() * 0.001;
+  ctx.fillStyle = '#6a2030';
+  ctx.beginPath();
+  ctx.moveTo(-16, -19);
+  ctx.lineTo(16, -19);
+  ctx.lineTo(14, 16 + Math.sin(t) * 2);
+  ctx.lineTo(0, 22 + Math.sin(t + 1) * 2);
+  ctx.lineTo(-14, 16 + Math.sin(t + 2) * 2);
+  ctx.closePath();
+  ctx.fill();
+  // emblem
+  ctx.fillStyle = '#d4a44a';
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6a2030';
+  ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+  // fringe
+  ctx.strokeStyle = '#d4a44a';
+  ctx.lineWidth = 1;
+  for (let i = -12; i <= 12; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(i, 16 + Math.sin(t + i * 0.3) * 2);
+    ctx.lineTo(i, 20 + Math.sin(t + i * 0.3) * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawFloorRug(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // rug body
+  ctx.fillStyle = 'rgba(100, 40, 50, 0.35)';
+  ctx.fillRect(-30, -20, 60, 40);
+  // border pattern
+  ctx.strokeStyle = 'rgba(180, 120, 60, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-28, -18, 56, 36);
+  ctx.strokeStyle = 'rgba(160, 100, 50, 0.2)';
+  ctx.strokeRect(-24, -14, 48, 28);
+  // center design
+  ctx.fillStyle = 'rgba(180, 140, 80, 0.2)';
+  ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(200, 160, 90, 0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawWallLight(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.003;
+  const flicker = 0.6 + Math.sin(t * 2.7) * 0.15 + Math.sin(t * 5.3) * 0.05;
+  // light cone
+  ctx.fillStyle = `rgba(255, 220, 150, ${flicker * 0.12})`;
+  ctx.beginPath();
+  ctx.moveTo(-4, 4); ctx.lineTo(-20, 32); ctx.lineTo(20, 32);
+  ctx.lineTo(4, 4); ctx.closePath(); ctx.fill();
+  // fixture
+  ctx.fillStyle = '#4a3a2a';
+  ctx.fillRect(-6, -4, 12, 8);
+  // bulb
+  ctx.fillStyle = `rgba(255, 240, 200, ${flicker})`;
+  ctx.beginPath(); ctx.arc(0, 4, 4, 0, Math.PI * 2); ctx.fill();
+  // glow
+  const glow = ctx.createRadialGradient(0, 4, 2, 0, 4, 16);
+  glow.addColorStop(0, `rgba(255, 220, 150, ${flicker * 0.4})`);
+  glow.addColorStop(1, 'rgba(255, 200, 100, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 4, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawCeilingFan(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.002;
+  // shadow on floor
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 28, 28, 0, 0, Math.PI * 2); ctx.fill();
+  // blades
+  ctx.strokeStyle = 'rgba(100, 90, 70, 0.3)';
+  ctx.lineWidth = 6;
+  for (let i = 0; i < 4; i++) {
+    const a = t + (i / 4) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(a) * 24, Math.sin(a) * 24);
+    ctx.stroke();
+  }
+  // center hub
+  ctx.fillStyle = 'rgba(80, 70, 60, 0.4)';
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPottedPlant(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // pot
+  ctx.fillStyle = '#8a5533';
+  ctx.fillRect(-8, 4, 16, 12);
+  ctx.fillStyle = '#6a3a1a';
+  ctx.fillRect(-10, 2, 20, 4);
+  // soil
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(-7, 2, 14, 3);
+  // leaves
+  ctx.fillStyle = '#3a7a3a';
+  ctx.beginPath(); ctx.ellipse(-6, -4, 6, 8, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4a8a4a';
+  ctx.beginPath(); ctx.ellipse(5, -6, 5, 9, 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2a6a2a';
+  ctx.beginPath(); ctx.ellipse(0, -10, 4, 7, 0, 0, Math.PI * 2); ctx.fill();
+  // stem
+  ctx.strokeStyle = '#2a5a2a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(0, -6); ctx.stroke();
+  ctx.restore();
+}
+
+function drawCrateStack(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // bottom crate
+  ctx.fillStyle = '#5a4a30';
+  ctx.fillRect(-18, -4, 36, 24);
+  ctx.strokeStyle = '#3a3020';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-18, -4, 36, 24);
+  // cross bars
+  ctx.strokeStyle = '#7a6a4a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-18, -4); ctx.lineTo(18, 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(18, -4); ctx.lineTo(-18, 20); ctx.stroke();
+  // top crate (smaller, offset)
+  ctx.fillStyle = '#6a5a3a';
+  ctx.fillRect(-12, -20, 24, 18);
+  ctx.strokeStyle = '#4a3a20';
+  ctx.strokeRect(-12, -20, 24, 18);
+  // label
+  ctx.fillStyle = '#aa9a6a';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('CARGO', 0, -9);
+  ctx.restore();
+}
+
+function drawWallClock(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // clock face
+  ctx.fillStyle = '#e8e0d0';
+  ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#5a4a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.stroke();
+  // hour marks
+  ctx.fillStyle = '#3a3030';
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    ctx.fillRect(Math.cos(a) * 11 - 1, Math.sin(a) * 11 - 1, 2, 2);
+  }
+  // hour hand
+  const hourAngle = (t * 0.01) % (Math.PI * 2);
+  ctx.strokeStyle = '#2a2020';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(hourAngle - Math.PI / 2) * 7, Math.sin(hourAngle - Math.PI / 2) * 7);
+  ctx.stroke();
+  // minute hand
+  const minAngle = (t * 0.1) % (Math.PI * 2);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(minAngle - Math.PI / 2) * 10, Math.sin(minAngle - Math.PI / 2) * 10);
+  ctx.stroke();
+  // center dot
+  ctx.fillStyle = '#4a3a2a';
+  ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawWallBookshelf(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // shelf frame
+  ctx.fillStyle = '#4a3020';
+  ctx.fillRect(-22, -24, 44, 48);
+  ctx.strokeStyle = '#6a4a2a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-22, -24, 44, 48);
+  // shelves
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(-20, -8, 40, 2);
+  ctx.fillRect(-20, 8, 40, 2);
+  // books on each shelf
+  const bookColors = ['#8a3030', '#3060a0', '#308050', '#7a6020', '#5030a0', '#a05020', '#206060'];
+  for (let shelf = 0; shelf < 3; shelf++) {
+    const shelfY = -22 + shelf * 16;
+    let bx = -18;
+    for (let b = 0; b < 6; b++) {
+      const bw = 4 + Math.sin(shelf * 3 + b * 7) * 2;
+      const bh = 12 + Math.sin(shelf * 5 + b * 3) * 2;
+      ctx.fillStyle = bookColors[(shelf * 3 + b) % bookColors.length];
+      ctx.fillRect(bx, shelfY + (14 - bh), bw, bh);
+      bx += bw + 1;
+      if (bx > 16) break;
+    }
+  }
+  ctx.restore();
+}
+
 function drawExitStairs(x, y) {
   ctx.save();
   ctx.translate(x, y);
@@ -2119,6 +2712,22 @@ function draw() {
   for (const door of game.doors) {
     const ds = worldToScreen(door.x * TILE, door.y * TILE, camera);
     drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door, theme);
+    // draw spacebar prompt if player is near a closed door
+    if (door.showPrompt && !door.open) {
+      const promptX = ds.x + (door.w * TILE) / 2;
+      const promptY = ds.y - 16;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(promptX - 48, promptY - 14, 96, 22);
+      ctx.strokeStyle = '#ffd740';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(promptX - 48, promptY - 14, 96, 22);
+      ctx.fillStyle = '#ffd740';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(door.locked && !game.hasKey ? 'LOCKED' : '[SPACE] Open', promptX, promptY + 1);
+      ctx.restore();
+    }
   }
 
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);
@@ -2319,7 +2928,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
   ctx.font = '13px sans-serif';
-  ctx.fillText('Reach STAIRS to ascend', 26, 55);
+  ctx.fillText('SPACE to open doors · Reach STAIRS', 26, 55);
   // key status indicator
   if (game.keyPickup) {
     ctx.fillStyle = game.hasKey ? '#ffd740' : '#666';
@@ -3129,6 +3738,11 @@ window.addEventListener('keydown', (e) => {
     game.objectiveMode = game.objectiveMode === 'purge' ? 'speedrun' : 'purge';
     game.message = `Objective mode: ${game.objectiveMode === 'purge' ? 'Purge' : 'Speedrun'}`;
     syncSettingsInputs();
+  }
+
+  if (key === ' ') {
+    e.preventDefault();
+    game.doorInteract = true;
   }
 
   if (key === game.keybinds.reload) reloadWeapon();

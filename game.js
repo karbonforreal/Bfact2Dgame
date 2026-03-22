@@ -626,6 +626,14 @@ function startMap(index, keepPlayerState = true) {
     knifeAnim: 0
   };
 
+  // Temporarily open all unlocked doors so enemy spawn pathfinding can reach
+  // all rooms. Without this, closed doors block buildReachableTileSet and
+  // enemies fall back to the spawn room.
+  for (const door of game.doors) {
+    if (!door.locked) door.open = true;
+  }
+  game.navGridCache.clear();
+
   game.enemies = map.enemies.map((e, i) => {
     const type = e.type || 'humanoid';
     const radius = type === 'dog' ? 14 : type === 'shield' ? 18 : 16;
@@ -656,7 +664,6 @@ function startMap(index, keepPlayerState = true) {
       const origin = worldToTile(playerSpawn.x, playerSpawn.y);
       const reachable = buildReachableTileSet(origin, radius);
       let bestPoint = null;
-      let bestDistFromPlayer = 0;
       let bestDistFromIntended = Infinity;
       const intendedX = e.x * TILE;
       const intendedY = e.y * TILE;
@@ -668,12 +675,13 @@ function startMap(index, keepPlayerState = true) {
         const dIntended = Math.hypot(center.x - intendedX, center.y - intendedY);
         if (!bestPoint || dIntended < bestDistFromIntended) {
           bestPoint = center;
-          bestDistFromPlayer = dPlayer;
           bestDistFromIntended = dIntended;
         }
       }
       if (bestPoint) safeSpawn = bestPoint;
     }
+    // Hard guarantee: if enemy is STILL in spawn room or corridor, skip it
+    if (inForbiddenZone(safeSpawn.x, safeSpawn.y)) return null;
     const variant = HUMANOID_VARIANTS[Math.floor(Math.random() * HUMANOID_VARIANTS.length)];
     return {
       id: `${index}-${i}`,
@@ -697,7 +705,13 @@ function startMap(index, keepPlayerState = true) {
       pathTarget: { tx: Math.floor(safeSpawn.x / TILE), ty: Math.floor(safeSpawn.y / TILE) },
       pathRecalc: 0
     };
-  });
+  }).filter(Boolean);
+
+  // Restore all doors to closed and rebuild nav grid for normal gameplay
+  for (const door of game.doors) {
+    door.open = false;
+  }
+  game.navGridCache.clear();
 
   game.pickups = map.pickups.map((p, i) => ({
     ...findReachableOpenPoint(

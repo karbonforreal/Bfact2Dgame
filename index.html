@@ -10,10 +10,59 @@
   <main class="game-shell">
     <header class="hud-bar">
       <h1>Cyberdog Beta 1</h1>
-      <p class="hint">WASD move · Mouse aim · Left click shoot · 1/2/3/4 swap guns · R reload · P pause · G objective mode</p>
+      <p class="hint desktop-hint">WASD move · Mouse aim · Left click shoot · 1–6 swap guns · R reload · P pause · G objective mode</p>
+      <p class="hint mobile-hint">Left thumb = move joystick &nbsp;·&nbsp; Right thumb = aim &amp; shoot &nbsp;·&nbsp; See buttons below for reload, pause &amp; weapon swap</p>
     </header>
     <div class="canvas-wrap">
       <canvas id="gameCanvas" width="1280" height="640" aria-label="Cyberdog game canvas"></canvas>
+
+      <!-- Touch controls — shown only on touch/mobile devices -->
+      <div id="mobileControls" class="mobile-controls" aria-label="Touch game controls" role="group">
+
+        <!-- Left half: virtual joystick for movement -->
+        <div id="joystickZone" class="joystick-zone" aria-label="Movement joystick">
+          <div id="joystickBase" class="joystick-base">
+            <div id="joystickThumb" class="joystick-thumb"></div>
+          </div>
+          <span class="zone-hint">👈 move</span>
+        </div>
+
+        <!-- Right half: drag to aim, tap to shoot -->
+        <div id="aimZone" class="aim-zone" aria-label="Aim and shoot area">
+          <span class="zone-hint">👉 tap / hold = aim &amp; shoot</span>
+
+          <!-- Action buttons (positioned inside aim zone) -->
+          <button id="btnReload" class="touch-btn reload-btn" aria-label="Reload weapon">
+            <span class="btn-icon">↺</span>
+            <span class="btn-label">Reload</span>
+          </button>
+
+          <button id="btnPause" class="touch-btn pause-btn-touch" aria-label="Pause game">
+            <span class="btn-icon">⏸</span>
+            <span class="btn-label">Pause</span>
+          </button>
+
+          <button id="btnNextWeapon" class="touch-btn next-weapon-btn" aria-label="Next weapon">
+            <span class="btn-icon">▶</span>
+            <span class="btn-label">Next</span>
+          </button>
+
+          <button id="btnPrevWeapon" class="touch-btn prev-weapon-btn" aria-label="Previous weapon">
+            <span class="btn-icon">◀</span>
+            <span class="btn-label">Prev</span>
+          </button>
+        </div>
+
+        <!-- Legend strip along the bottom -->
+        <div class="touch-legend" aria-hidden="true">
+          <span class="legend-item">← Joystick = Move</span>
+          <span class="legend-sep">·</span>
+          <span class="legend-item">→ Tap/Hold = Aim &amp; Shoot</span>
+          <span class="legend-sep">·</span>
+          <span class="legend-item">↺ Reload &nbsp; ⏸ Pause &nbsp; ▶◀ Swap Weapon</span>
+        </div>
+      </div>
+
       <aside id="pauseOverlay" class="pause-overlay" aria-live="polite"></aside>
     </div>
     <section class="panel" id="uiPanel">

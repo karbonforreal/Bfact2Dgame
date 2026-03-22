@@ -249,11 +249,11 @@ const maps = [
       { type: 'airlock-chamber', x: 7, y: 15.5 }
     ],
     enemies: [
-      { x: 18, y: 3, hp: 55 },
-      { x: 3, y: 9, hp: 45, type: 'dog' },
-      { x: 14, y: 9, hp: 65, type: 'flanker' },
+      { x: 24, y: 4, hp: 55 },
+      { x: 10, y: 16, hp: 45, type: 'dog' },
+      { x: 16, y: 11, hp: 65, type: 'flanker' },
       { x: 24, y: 9, hp: 65, type: 'shield' },
-      { x: 7, y: 16, hp: 55 }
+      { x: 4, y: 16, hp: 55 }
     ],
     pickups: [
       { x: 3.5, y: 3.5, type: 'ammo-blaster', value: 15 },
@@ -308,11 +308,11 @@ const maps = [
       { type: 'server-racks', x: 26, y: 3.5 }
     ],
     enemies: [
-      { x: 17, y: 5, hp: 65 },
-      { x: 26, y: 5, hp: 75, type: 'shield' },
-      { x: 5, y: 11, hp: 65 },
-      { x: 16, y: 9, hp: 70 },
-      { x: 5, y: 18, hp: 50, type: 'dog' }
+      { x: 28, y: 4, hp: 75, type: 'shield' },
+      { x: 27, y: 11, hp: 65 },
+      { x: 16, y: 13, hp: 70 },
+      { x: 26, y: 18, hp: 65 },
+      { x: 6, y: 18, hp: 50, type: 'dog' }
     ],
     pickups: [
       { x: 2.5, y: 18.5, type: 'ammo-blaster', value: 20 },
@@ -368,9 +368,9 @@ const maps = [
       { type: 'coolant-pipes', x: 28, y: 12 }
     ],
     enemies: [
-      { x: 17, y: 3, hp: 90 },
-      { x: 28, y: 3, hp: 90, type: 'shield' },
-      { x: 5, y: 12, hp: 85 },
+      { x: 20, y: 5, hp: 90 },
+      { x: 28, y: 4, hp: 90, type: 'shield' },
+      { x: 5, y: 13, hp: 85 },
       { x: 17, y: 10, hp: 95 },
       { x: 17, y: 14, hp: 95, type: 'flanker' },
       { x: 28, y: 12, hp: 100 },
@@ -550,13 +550,38 @@ function startMap(index, keepPlayerState = true) {
     const hpScaleByType = type === 'shield' ? 1.28 : type === 'flanker' ? 0.88 : 1;
     const scaledHp = Math.round(e.hp * game.difficulty.hpScale * hpScaleByType);
     const baseSpeed = type === 'dog' ? 210 + Math.random() * 25 : type === 'flanker' ? 175 + Math.random() * 24 : 120 + Math.random() * 20;
-    const safeSpawn = findReachableOpenPoint(
+    let safeSpawn = findReachableOpenPoint(
       e.x * TILE,
       e.y * TILE,
       radius,
       playerSpawn.x,
       playerSpawn.y
     );
+    // Enforce minimum spawn distance from player (8 tiles)
+    const MIN_ENEMY_SPAWN_DIST = 10 * TILE;
+    const spawnDist = Math.hypot(safeSpawn.x - playerSpawn.x, safeSpawn.y - playerSpawn.y);
+    if (spawnDist < MIN_ENEMY_SPAWN_DIST) {
+      const origin = worldToTile(playerSpawn.x, playerSpawn.y);
+      const reachable = buildReachableTileSet(origin, radius);
+      let bestPoint = null;
+      let bestDistFromPlayer = 0;
+      let bestDistFromIntended = Infinity;
+      const intendedX = e.x * TILE;
+      const intendedY = e.y * TILE;
+      for (const key of reachable) {
+        const [tx, ty] = key.split(',').map(Number);
+        const center = tileCenter(tx, ty);
+        const dPlayer = Math.hypot(center.x - playerSpawn.x, center.y - playerSpawn.y);
+        if (dPlayer < MIN_ENEMY_SPAWN_DIST) continue;
+        const dIntended = Math.hypot(center.x - intendedX, center.y - intendedY);
+        if (!bestPoint || dIntended < bestDistFromIntended) {
+          bestPoint = center;
+          bestDistFromPlayer = dPlayer;
+          bestDistFromIntended = dIntended;
+        }
+      }
+      if (bestPoint) safeSpawn = bestPoint;
+    }
     const variant = HUMANOID_VARIANTS[Math.floor(Math.random() * HUMANOID_VARIANTS.length)];
     return {
       id: `${index}-${i}`,
@@ -571,7 +596,7 @@ function startMap(index, keepPlayerState = true) {
       walkCycle: Math.random() * Math.PI * 2,
       moving: false,
       variant,
-      alerted: type === 'dog',
+      alerted: false,
       seesPlayer: false,
       guardOrigin: { x: safeSpawn.x, y: safeSpawn.y },
       guardTarget: { x: safeSpawn.x, y: safeSpawn.y },
@@ -811,7 +836,14 @@ function enemyCanSeePlayer(enemy, player) {
 
 function updateEnemyAwareness(enemy, player) {
   if (enemy.type === 'dog') {
-    enemy.alerted = true;
+    if (!enemy.alerted) {
+      // Dogs detect by proximity (scent range) rather than instant alert
+      const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+      if (dist < 480 || enemy.seesPlayer) {
+        enemy.alerted = true;
+        game.message = 'Something detected you!';
+      }
+    }
     return;
   }
 

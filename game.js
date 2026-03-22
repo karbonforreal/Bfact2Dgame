@@ -250,10 +250,8 @@ const maps = [
     ],
     enemies: [
       { x: 24, y: 4, hp: 55 },
-      { x: 10, y: 16, hp: 45, type: 'dog' },
-      { x: 16, y: 11, hp: 65, type: 'flanker' },
       { x: 24, y: 9, hp: 65, type: 'shield' },
-      { x: 4, y: 16, hp: 55 }
+      { x: 15, y: 16, hp: 60, type: 'flanker' }
     ],
     pickups: [
       { x: 3.5, y: 3.5, type: 'ammo-handgun', value: 15 },
@@ -446,6 +444,7 @@ const game = {
   bullets: [],
   enemyBullets: [],
   muzzleFlashes: [],
+  explosions: [],
   enemies: [],
   pickups: [],
   doors: [],
@@ -636,6 +635,7 @@ function startMap(index, keepPlayerState = true) {
   game.bullets = [];
   game.enemyBullets = [];
   game.muzzleFlashes = [];
+  game.explosions = [];
 
   // doors already initialized above (before enemy spawn to get correct nav grid)
   game.hasKey = false;
@@ -1026,6 +1026,49 @@ function spawnMuzzleFlash(x, y, angle, color = '#a9f8ff', large = false) {
   });
 }
 
+const ROCKET_BLAST_RADIUS = 180;
+const ROCKET_BLAST_DAMAGE = 110;
+
+function triggerExplosion(x, y) {
+  // Visual explosion entry
+  game.explosions.push({
+    x,
+    y,
+    life: 0.55,
+    maxLife: 0.55,
+    radius: ROCKET_BLAST_RADIUS
+  });
+
+  // Big central flash
+  spawnMuzzleFlash(x, y, 0, '#ff8c00', true);
+  spawnMuzzleFlash(x, y, Math.PI * 0.5, '#ffdd44', true);
+  spawnMuzzleFlash(x, y, Math.PI, '#ff5500', true);
+  spawnMuzzleFlash(x, y, Math.PI * 1.5, '#ff8c00', true);
+
+  // Area damage to enemies
+  for (const enemy of game.enemies) {
+    if (enemy.hp <= 0) continue;
+    const dist = Math.hypot(enemy.x - x, enemy.y - y);
+    if (dist > ROCKET_BLAST_RADIUS) continue;
+    // Damage falls off toward edge of blast
+    const falloff = 1 - (dist / ROCKET_BLAST_RADIUS) * 0.6;
+    enemy.hp -= Math.round(ROCKET_BLAST_DAMAGE * falloff);
+    if (enemy.hp <= 0) {
+      game.killCount += 1;
+      game.message = `Target down (${game.killCount})`;
+    }
+  }
+
+  // Self-damage if player is in blast radius
+  const playerDist = Math.hypot(game.player.x - x, game.player.y - y);
+  if (playerDist < ROCKET_BLAST_RADIUS && game.player.invulnerable <= 0) {
+    const falloff = 1 - (playerDist / ROCKET_BLAST_RADIUS) * 0.6;
+    applyDamage(Math.round(60 * falloff));
+    game.player.invulnerable = 0.4;
+    game.message = 'Caught in blast!';
+  }
+}
+
 function shootPlayerWeapon() {
   const p = game.player;
   if (p.fireCooldown > 0 || p.reloading > 0) return;
@@ -1366,11 +1409,18 @@ function update(dt) {
   }
   if (game.doorMsgCooldown > 0) game.doorMsgCooldown -= dt;
 
-  game.bullets = game.bullets.filter((b) => b.life > 0);
+  game.bullets = game.bullets.filter((b) => {
+    if (b.life <= 0 && b.weapon === 'rocket') triggerExplosion(b.x, b.y);
+    return b.life > 0;
+  });
   game.enemyBullets = game.enemyBullets.filter((b) => b.life > 0);
   game.muzzleFlashes = game.muzzleFlashes.filter((flash) => {
     flash.life -= dt;
     return flash.life > 0;
+  });
+  game.explosions = game.explosions.filter((exp) => {
+    exp.life -= dt;
+    return exp.life > 0;
   });
 
   if (p.hp <= 0) {
@@ -2193,6 +2243,39 @@ function draw() {
     ctx.fill();
   }
 
+  // Draw explosions — expanding shockwave ring + inner fireball
+  for (const exp of game.explosions) {
+    const s = worldToScreen(exp.x, exp.y, camera);
+    const t = 1 - exp.life / exp.maxLife; // 0 = just spawned, 1 = fading out
+    const currentRadius = exp.radius * (0.15 + t * 0.85);
+    const alpha = Math.max(0, 1 - t * 1.1);
+
+    // Outer shockwave ring
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, currentRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 160, 40, ${alpha * 0.9})`;
+    ctx.lineWidth = 5 * (1 - t);
+    ctx.stroke();
+
+    // Mid fire ring
+    if (t < 0.5) {
+      const fireR = currentRadius * 0.65;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, fireR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 90, 10, ${alpha * 0.55})`;
+      ctx.fill();
+    }
+
+    // Central fireball
+    if (t < 0.35) {
+      const coreR = currentRadius * 0.3;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, coreR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 240, 160, ${alpha * 0.85})`;
+      ctx.fill();
+    }
+  }
+
   for (const flash of game.muzzleFlashes) {
     const s = worldToScreen(flash.x, flash.y, camera);
     const alpha = flash.life / flash.maxLife;
@@ -2667,8 +2750,10 @@ function drawPlayer(player) {
     ctx.fillRect(2 + eyeOffsetX, -10 + eyeOffsetY, 2.4, 2.2);
   }
 
+  // Body is already rotated by (angle * 0.32). Gun must add (angle * 0.68) so
+  // total canvas rotation = 0.32 + 0.68 = 1.0 × angle — pointing at the mouse.
   ctx.save();
-  ctx.rotate(player.angle);
+  ctx.rotate(player.angle * 0.68);
   if (player.activeWeapon === 'knife') {
     // Knife — handle + blade
     ctx.fillStyle = '#3a2a1a';

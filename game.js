@@ -639,15 +639,20 @@ function startMap(index, keepPlayerState = true) {
       playerSpawn.x,
       playerSpawn.y
     );
-    // Enforce: no enemies in spawn room + minimum distance from player
-    const MIN_ENEMY_SPAWN_DIST = 14 * TILE;
-    const inSpawnRoom = (px, py) => {
+    // Enforce: no enemies in spawn room, main corridor, or within minimum distance of player.
+    // Enemies must only appear inside the discrete side rooms of each level.
+    const MIN_ENEMY_SPAWN_DIST = 16 * TILE;
+    const inForbiddenZone = (px, py) => {
       const tx = px / TILE;
       const ty = py / TILE;
-      return tx >= 0 && tx <= 10 && ty >= 7 && ty <= 19;
+      // Starting (spawn) room: x:0-10, y:7-19
+      if (tx <= 10 && ty >= 7 && ty <= 19) return true;
+      // Main corridor connecting all rooms: x:11-43, y:10-14
+      if (tx >= 11 && tx <= 43 && ty >= 10 && ty <= 14) return true;
+      return false;
     };
     const spawnDist = Math.hypot(safeSpawn.x - playerSpawn.x, safeSpawn.y - playerSpawn.y);
-    if (spawnDist < MIN_ENEMY_SPAWN_DIST || inSpawnRoom(safeSpawn.x, safeSpawn.y)) {
+    if (spawnDist < MIN_ENEMY_SPAWN_DIST || inForbiddenZone(safeSpawn.x, safeSpawn.y)) {
       const origin = worldToTile(playerSpawn.x, playerSpawn.y);
       const reachable = buildReachableTileSet(origin, radius);
       let bestPoint = null;
@@ -659,7 +664,7 @@ function startMap(index, keepPlayerState = true) {
         const [tx, ty] = key.split(',').map(Number);
         const center = tileCenter(tx, ty);
         const dPlayer = Math.hypot(center.x - playerSpawn.x, center.y - playerSpawn.y);
-        if (dPlayer < MIN_ENEMY_SPAWN_DIST || inSpawnRoom(center.x, center.y)) continue;
+        if (dPlayer < MIN_ENEMY_SPAWN_DIST || inForbiddenZone(center.x, center.y)) continue;
         const dIntended = Math.hypot(center.x - intendedX, center.y - intendedY);
         if (!bestPoint || dIntended < bestDistFromIntended) {
           bestPoint = center;

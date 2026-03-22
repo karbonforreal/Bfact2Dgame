@@ -272,6 +272,220 @@ body {
 }
 
 
+/* =====================================================
+   DESKTOP / MOBILE HINT TOGGLE
+   ===================================================== */
+
+.desktop-hint { display: block; }
+.mobile-hint  { display: none;  }
+
+/* =====================================================
+   MOBILE TOUCH CONTROLS
+   Only becomes visible when JS adds .active class
+   (which only happens when pointer: coarse is detected)
+   ===================================================== */
+
+.mobile-controls {
+  display: none;                    /* hidden until JS activates */
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;             /* only children catch touches */
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mobile-controls.active {
+  display: block;
+}
+
+/* ---------- ZONES ---------- */
+
+.joystick-zone,
+.aim-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: all;
+  touch-action: none;
+}
+
+.joystick-zone {
+  left: 0;
+  width: 45%;
+  /* Subtle left-side glow to hint where the joystick lives */
+  background: radial-gradient(ellipse 55% 40% at 30% 75%,
+    rgba(80, 240, 255, 0.055) 0%, transparent 70%);
+}
+
+.aim-zone {
+  right: 0;
+  width: 55%;
+  /* Subtle right-side glow */
+  background: radial-gradient(ellipse 55% 35% at 70% 75%,
+    rgba(255, 95, 122, 0.045) 0%, transparent 70%);
+}
+
+/* Zone hint labels */
+.zone-hint {
+  position: absolute;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+/* ---------- VIRTUAL JOYSTICK ---------- */
+
+.joystick-base {
+  display: none;
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2px solid rgba(80, 240, 255, 0.4);
+  background: rgba(80, 240, 255, 0.07);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 18px rgba(80, 240, 255, 0.18);
+}
+
+.joystick-thumb {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(120, 255, 255, 0.88),
+    rgba(50, 190, 215, 0.68));
+  border: 2px solid rgba(80, 240, 255, 0.75);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 14px rgba(80, 240, 255, 0.5);
+}
+
+/* ---------- ACTION BUTTONS ---------- */
+
+.touch-btn {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(8, 17, 28, 0.82);
+  border: 2px solid rgba(80, 240, 255, 0.45);
+  color: #a0d8ef;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: all;
+  touch-action: manipulation;
+  gap: 2px;
+  padding: 4px;
+  line-height: 1;
+  font-family: inherit;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 80ms, border-color 80ms;
+}
+
+.touch-btn:active,
+.touch-btn.pressed {
+  background: rgba(80, 240, 255, 0.18);
+  border-color: rgba(80, 240, 255, 0.9);
+}
+
+.btn-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.btn-label {
+  font-size: 0.5rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(160, 216, 239, 0.75);
+}
+
+/* Reload button — bottom-right of aim zone */
+.reload-btn {
+  width: 60px;
+  height: 60px;
+  bottom: 18px;
+  right: 16px;
+  border-color: rgba(255, 209, 92, 0.5);
+  color: #ffd25c;
+}
+.reload-btn .btn-label { color: rgba(255, 209, 92, 0.7); }
+
+/* Pause button — top-right corner */
+.pause-btn-touch {
+  width: 46px;
+  height: 46px;
+  top: 12px;
+  right: 12px;
+}
+
+/* Next weapon — row below pause */
+.next-weapon-btn {
+  width: 52px;
+  height: 52px;
+  top: 68px;
+  right: 12px;
+  border-color: rgba(158, 255, 107, 0.45);
+  color: #9eff6b;
+}
+.next-weapon-btn .btn-label { color: rgba(158, 255, 107, 0.7); }
+
+/* Prev weapon — left of next */
+.prev-weapon-btn {
+  width: 52px;
+  height: 52px;
+  top: 68px;
+  right: 72px;
+  border-color: rgba(158, 255, 107, 0.45);
+  color: #9eff6b;
+}
+.prev-weapon-btn .btn-label { color: rgba(158, 255, 107, 0.7); }
+
+/* ---------- LEGEND STRIP ---------- */
+
+.touch-legend {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.legend-item {
+  font-size: 0.52rem;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.04em;
+}
+
+.legend-sep {
+  font-size: 0.52rem;
+  color: rgba(255, 255, 255, 0.18);
+}
+
+/* =====================================================
+   END MOBILE TOUCH CONTROLS
+   ===================================================== */
+
 .pause-overlay {
   position: absolute;
   inset: 0;

@@ -3783,6 +3783,211 @@ window.addEventListener('mouseup', () => {
 
 window.addEventListener('resize', resizeCanvasToViewport);
 
+// =====================================================
+// MOBILE / TOUCH CONTROLS
+// Only activated on devices whose primary pointer is
+// coarse (finger) and has no hover — i.e. phones &
+// tablets. Desktops and "desktop site" mode keep the
+// standard keyboard + mouse controls with no overlay.
+// =====================================================
+
+function isMobileDevice() {
+  return window.matchMedia('(pointer: coarse) and (hover: none)').matches;
+}
+
+const WEAPON_ORDER = ['knife', 'handgun', 'shotgun', 'machinegun', 'sniper', 'rocket'];
+
+function cycleWeapon(dir) {
+  const p = game.player;
+  const idx = WEAPON_ORDER.indexOf(p.activeWeapon);
+  const next = (idx + dir + WEAPON_ORDER.length) % WEAPON_ORDER.length;
+  p.activeWeapon = WEAPON_ORDER[next];
+  p.reloading = 0;
+  p.reloadingWeapon = null;
+  game.message = (WEAPONS[p.activeWeapon] ? WEAPONS[p.activeWeapon].name : p.activeWeapon) + ' equipped.';
+}
+
+// Convert a Touch object into canvas-space coordinates
+function touchToCanvas(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: ((touch.clientX - rect.left) / rect.width) * canvas.width,
+    y: ((touch.clientY - rect.top) / rect.height) * canvas.height
+  };
+}
+
+// Inject / retract WASD keys from joystick dx/dy values
+function applyJoystickToKeys(dx, dy) {
+  const DEAD = 0.25;
+  if (dx < -DEAD) game.keys.add('a'); else game.keys.delete('a');
+  if (dx >  DEAD) game.keys.add('d'); else game.keys.delete('d');
+  if (dy < -DEAD) game.keys.add('w'); else game.keys.delete('w');
+  if (dy >  DEAD) game.keys.add('s'); else game.keys.delete('s');
+}
+
+function initMobileControls() {
+  if (!isMobileDevice()) return;
+
+  // Show mobile controls overlay + swap hint text
+  document.getElementById('mobileControls').classList.add('active');
+  document.querySelector('.desktop-hint').style.display = 'none';
+  document.querySelector('.mobile-hint').style.display  = '';
+
+  // Prevent page scroll while playing
+  document.body.style.overflow    = 'hidden';
+  document.body.style.touchAction = 'none';
+
+  // ---- Element references ----
+  const joystickZone  = document.getElementById('joystickZone');
+  const joystickBase  = document.getElementById('joystickBase');
+  const joystickThumb = document.getElementById('joystickThumb');
+  const aimZone       = document.getElementById('aimZone');
+
+  const JOYSTICK_R = 55; // max thumb travel in CSS px
+
+  // Per-finger tracking
+  const joystick = { id: null, baseX: 0, baseY: 0 };
+  const aim      = { id: null };
+
+  // ---- JOYSTICK: touchstart ----
+  joystickZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (joystick.id !== null) continue; // already tracking one finger
+      joystick.id    = t.identifier;
+      joystick.baseX = t.clientX;
+      joystick.baseY = t.clientY;
+
+      // Place the joystick graphic where the finger landed
+      const rect = joystickZone.getBoundingClientRect();
+      joystickBase.style.left    = (t.clientX - rect.left) + 'px';
+      joystickBase.style.top     = (t.clientY - rect.top)  + 'px';
+      joystickBase.style.display = 'block';
+      joystickThumb.style.transform = 'translate(-50%, -50%)';
+    }
+  }, { passive: false });
+
+  // ---- JOYSTICK: touchmove ----
+  joystickZone.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== joystick.id) continue;
+      const rawDx = t.clientX - joystick.baseX;
+      const rawDy = t.clientY - joystick.baseY;
+      const dist  = Math.hypot(rawDx, rawDy);
+      const angle = Math.atan2(rawDy, rawDx);
+      const clamped = Math.min(dist, JOYSTICK_R);
+
+      // Normalised -1…1 values for movement
+      const ndx = (clamped / JOYSTICK_R) * Math.cos(angle);
+      const ndy = (clamped / JOYSTICK_R) * Math.sin(angle);
+
+      // Move thumb graphic
+      const tx = Math.cos(angle) * clamped;
+      const ty = Math.sin(angle) * clamped;
+      joystickThumb.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+
+      applyJoystickToKeys(ndx, ndy);
+    }
+  }, { passive: false });
+
+  // ---- JOYSTICK: touchend / cancel ----
+  function joystickEnd(e) {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== joystick.id) continue;
+      joystick.id = null;
+      joystickBase.style.display = 'none';
+      joystickThumb.style.transform = 'translate(-50%, -50%)';
+      applyJoystickToKeys(0, 0); // release all movement keys
+    }
+  }
+  joystickZone.addEventListener('touchend',    joystickEnd, { passive: false });
+  joystickZone.addEventListener('touchcancel', joystickEnd, { passive: false });
+
+  // ---- AIM ZONE: touchstart — set aim + begin shooting ----
+  aimZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (aim.id !== null) continue;
+      aim.id = t.identifier;
+      const c = touchToCanvas(t);
+      game.mouse.x    = c.x;
+      game.mouse.y    = c.y;
+      game.mouse.down = true;
+    }
+  }, { passive: false });
+
+  // ---- AIM ZONE: touchmove — update crosshair ----
+  aimZone.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== aim.id) continue;
+      const c = touchToCanvas(t);
+      game.mouse.x = c.x;
+      game.mouse.y = c.y;
+    }
+  }, { passive: false });
+
+  // ---- AIM ZONE: touchend / cancel — stop shooting ----
+  function aimEnd(e) {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== aim.id) continue;
+      aim.id          = null;
+      game.mouse.down = false;
+    }
+  }
+  aimZone.addEventListener('touchend',    aimEnd, { passive: false });
+  aimZone.addEventListener('touchcancel', aimEnd, { passive: false });
+
+  // ---- CHARACTER SELECT: tap to pick character on mobile ----
+  canvas.addEventListener('touchstart', (e) => {
+    if (game.state !== 'character-select') return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    const c = touchToCanvas(t);
+    const bounds = getCharSelectCardBounds();
+    bounds.forEach((b, i) => {
+      if (c.x >= b.x && c.x <= b.x + b.w && c.y >= b.y && c.y <= b.y + b.h) {
+        selectCharacter(CHARACTER_DEFS[i]);
+      }
+    });
+  }, { passive: false });
+
+  // ---- ACTION BUTTONS ----
+  // Each button stops propagation so the aim-zone doesn't fire simultaneously
+
+  document.getElementById('btnReload').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    reloadWeapon();
+  }, { passive: false });
+
+  document.getElementById('btnPause').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPaused(!game.paused);
+  }, { passive: false });
+
+  document.getElementById('btnNextWeapon').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    cycleWeapon(1);
+  }, { passive: false });
+
+  document.getElementById('btnPrevWeapon').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    cycleWeapon(-1);
+  }, { passive: false });
+}
+
+// =====================================================
+// END MOBILE TOUCH CONTROLS
+// =====================================================
+
 resizeCanvasToViewport();
+initMobileControls();
 initSettingsUI();
 requestAnimationFrame(gameLoop);

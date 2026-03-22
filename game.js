@@ -3849,10 +3849,25 @@ function initMobileControls() {
   const joystick = { id: null, baseX: 0, baseY: 0 };
   const aim      = { id: null };
 
+  // Helper: handle a tap on the character-select screen.
+  // Returns true if the tap was consumed (so zone handlers should bail out).
+  function handleCharSelectTouch(touch) {
+    if (game.state !== 'character-select') return false;
+    const c = touchToCanvas(touch);
+    const bounds = getCharSelectCardBounds();
+    bounds.forEach((b, i) => {
+      if (c.x >= b.x && c.x <= b.x + b.w && c.y >= b.y && c.y <= b.y + b.h) {
+        selectCharacter(CHARACTER_DEFS[i]);
+      }
+    });
+    return true;
+  }
+
   // ---- JOYSTICK: touchstart ----
   joystickZone.addEventListener('touchstart', (e) => {
     e.preventDefault();
     for (const t of e.changedTouches) {
+      if (handleCharSelectTouch(t)) return; // let character-select handle it
       if (joystick.id !== null) continue; // already tracking one finger
       joystick.id    = t.identifier;
       joystick.baseX = t.clientX;
@@ -3909,6 +3924,7 @@ function initMobileControls() {
   aimZone.addEventListener('touchstart', (e) => {
     e.preventDefault();
     for (const t of e.changedTouches) {
+      if (handleCharSelectTouch(t)) return; // let character-select handle it
       if (aim.id !== null) continue;
       aim.id = t.identifier;
       const c = touchToCanvas(t);
@@ -3940,20 +3956,6 @@ function initMobileControls() {
   }
   aimZone.addEventListener('touchend',    aimEnd, { passive: false });
   aimZone.addEventListener('touchcancel', aimEnd, { passive: false });
-
-  // ---- CHARACTER SELECT: tap to pick character on mobile ----
-  canvas.addEventListener('touchstart', (e) => {
-    if (game.state !== 'character-select') return;
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    const c = touchToCanvas(t);
-    const bounds = getCharSelectCardBounds();
-    bounds.forEach((b, i) => {
-      if (c.x >= b.x && c.x <= b.x + b.w && c.y >= b.y && c.y <= b.y + b.h) {
-        selectCharacter(CHARACTER_DEFS[i]);
-      }
-    });
-  }, { passive: false });
 
   // ---- ACTION BUTTONS ----
   // Each button stops propagation so the aim-zone doesn't fire simultaneously

@@ -222,6 +222,7 @@ const maps = [
     // Level 1: "Docking Ring"
     // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17. Rooms branch N/S.
     // ARMORY(S x:14-18), DOCK(N x:25-29), HUB(S x:35-39), EXIT(E x:45-50)
+    // ALL door gaps are exactly 1 tile wide. Walls fill rest of openings.
     name: 'Docking Ring',
     width: 52, height: 26,
     walls: [
@@ -230,20 +231,27 @@ const maps = [
       [1,1,9,7],[1,19,9,6],
       // spawn walls
       [1,8,9,1],[1,18,9,1],
-      [10,8,1,3],[10,14,1,4],
-      // corridor N wall y:10, gap x:25-29 for DOCK
-      [10,10,15,1],[30,10,14,1],
-      // corridor S wall y:14, gap x:14-18 ARMORY, gap x:35-39 HUB
-      [10,14,4,1],[19,14,16,1],[40,14,4,1],
-      // fill above corridor
-      [10,1,15,9],[24,1,1,9],[30,1,1,9],[31,1,13,9],
-      // fill below corridor
-      [10,15,4,10],[13,15,1,10],[19,15,1,10],[20,15,15,10],
-      [34,15,1,10],[40,15,1,10],[41,15,3,10],
+      // spawn E wall: gap at y:12 only (1 tile)
+      [10,8,1,4],[10,13,1,5],
+      // corridor N wall y:10 — gap at x:27 only (1 tile for DOCK)
+      [10,10,17,1],[28,10,16,1],
+      // corridor S wall y:14 — gap at x:16 (ARMORY), gap at x:37 (HUB)
+      [10,14,6,1],[17,14,20,1],[38,14,6,1],
+      // fill above corridor (all solid except DOCK room x:25-29)
+      [10,1,15,9],                    // x:10-24
+      [24,1,1,9],[30,1,1,9],         // DOCK side walls
+      [31,1,13,9],                    // x:31-43
+      // fill below corridor (all solid except ARMORY x:14-18 and HUB x:35-39)
+      [10,15,4,10],                   // x:10-13
+      [13,15,1,10],[19,15,1,10],     // ARMORY side walls
+      [20,15,15,10],                  // x:20-34
+      [34,15,1,10],[40,15,1,10],     // HUB side walls
+      [41,15,3,10],                   // x:41-43
       // exit room
       [45,1,6,7],[45,19,6,6],
       [45,8,6,1],[45,18,6,1],
-      [44,8,1,3],[44,14,1,4],
+      // exit W wall: gap at y:12 only (1 tile, LOCKED)
+      [44,8,1,4],[44,13,1,5],
     ],
     doors: [
       {x:10,y:12,w:1,h:1,locked:false,orientation:'v',swingDir:1},
@@ -301,23 +309,30 @@ const maps = [
     // Level 2: "Core Archive"
     // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17.
     // LIBRARY(N x:14-18), SERVER(S x:23-28), ARCHIVE(N x:33-38), STUDY+EXIT(S x:43-50)
+    // ALL door gaps exactly 1 tile wide.
     name: 'Core Archive',
     width: 52, height: 26,
     walls: [
       [0,0,52,1],[0,25,52,1],[0,0,1,26],[51,0,1,26],
       [1,1,9,7],[1,19,9,6],
       [1,8,9,1],[1,18,9,1],
-      [10,8,1,3],[10,14,1,4],
-      // corridor N wall y:10, gap x:14-18 LIBRARY, gap x:33-38 ARCHIVE
-      [10,10,4,1],[19,10,14,1],[39,10,5,1],
-      // corridor S wall y:14, gap x:23-28 SERVER, gap x:43-44 STUDY entry
-      [10,14,13,1],[29,14,14,1],
+      // spawn E wall: gap at y:12 only
+      [10,8,1,4],[10,13,1,5],
+      // corridor N wall y:10 — gap at x:16 (LIBRARY), gap at x:35 (ARCHIVE)
+      [10,10,6,1],[17,10,18,1],[36,10,8,1],
+      // corridor S wall y:14 — gap at x:25 (SERVER), gap at x:43 (STUDY)
+      [10,14,15,1],[26,14,17,1],[44,14,1,1],
       // fill above corridor
-      [10,1,3,9],[13,1,1,9],[19,1,1,9],[20,1,13,9],
-      [32,1,1,9],[39,1,1,9],[40,1,4,9],
+      [10,1,3,9],                     // x:10-12
+      [13,1,1,9],[19,1,1,9],         // LIBRARY side walls
+      [20,1,13,9],                    // x:20-32
+      [32,1,1,9],[39,1,1,9],         // ARCHIVE side walls
+      [40,1,4,9],                     // x:40-43
       // fill below corridor
-      [10,15,13,10],[22,15,1,10],[29,15,1,10],[30,15,13,10],
-      // STUDY room x:44-50 y:15-24 (E wall is outer x:51, S wall is outer y:25)
+      [10,15,13,10],                  // x:10-22
+      [22,15,1,10],[29,15,1,10],     // SERVER side walls
+      [30,15,13,10],                  // x:30-42
+      // STUDY room x:44-50 y:15-24
       // locked partition at y:20, gap at x:47
       [44,20,3,1],[48,20,3,1],
       // fill top-right
@@ -368,22 +383,29 @@ const maps = [
     // Level 3: "Reactor Vault"
     // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17.
     // DECON(N x:14-18), REACTOR(S x:22-28), COOLING(N x:32-38), CONTROL+EXIT(S x:43-50)
+    // ALL door gaps exactly 1 tile wide.
     name: 'Reactor Vault',
     width: 52, height: 26,
     walls: [
       [0,0,52,1],[0,25,52,1],[0,0,1,26],[51,0,1,26],
       [1,1,9,7],[1,19,9,6],
       [1,8,9,1],[1,18,9,1],
-      [10,8,1,3],[10,14,1,4],
-      // corridor N wall y:10, gap x:14-18 DECON, gap x:32-38 COOLING
-      [10,10,4,1],[19,10,13,1],[39,10,5,1],
-      // corridor S wall y:14, gap x:22-28 REACTOR, gap x:43-44 CONTROL entry
-      [10,14,12,1],[29,14,14,1],
+      // spawn E wall: gap at y:12 only
+      [10,8,1,4],[10,13,1,5],
+      // corridor N wall y:10 — gap at x:16 (DECON), gap at x:35 (COOLING)
+      [10,10,6,1],[17,10,18,1],[36,10,8,1],
+      // corridor S wall y:14 — gap at x:25 (REACTOR), gap at x:43 (CONTROL)
+      [10,14,15,1],[26,14,17,1],[44,14,1,1],
       // fill above corridor
-      [10,1,3,9],[13,1,1,9],[19,1,1,9],[20,1,12,9],
-      [31,1,1,9],[39,1,1,9],[40,1,4,9],
+      [10,1,3,9],
+      [13,1,1,9],[19,1,1,9],         // DECON side walls
+      [20,1,12,9],
+      [31,1,1,9],[39,1,1,9],         // COOLING side walls
+      [40,1,4,9],
       // fill below corridor
-      [10,15,12,10],[21,15,1,10],[29,15,1,10],[30,15,13,10],
+      [10,15,12,10],
+      [21,15,1,10],[29,15,1,10],     // REACTOR side walls
+      [30,15,13,10],
       // CONTROL+EXIT room x:44-50 y:15-24
       // locked partition at y:20, gap at x:47
       [44,20,3,1],[48,20,3,1],

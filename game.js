@@ -1,5 +1,6 @@
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false });
+ctx.imageSmoothingEnabled = false;
 const statusEl = document.getElementById('status');
 const scoreboardEl = document.getElementById('scoreboard');
 const settingsEl = document.getElementById('settings');
@@ -167,223 +168,292 @@ const WEAPONS = {
   }
 };
 
+// Retro Wolfenstein/Doom/CyberDogs inspired color themes — bold, saturated
 const LEVEL_THEMES = [
-  {
-    floorBase: ['#263541', '#1e2c36'],
-    floorGradient: ['rgba(127, 169, 199, 0.2)', 'rgba(64, 84, 102, 0.17)', 'rgba(25, 35, 47, 0.3)'],
-    lineColor: 'rgba(126, 196, 235, 0.11)',
-    panelColor: 'rgba(206, 222, 232, 0.12)',
-    boltColor: 'rgba(129, 153, 174, 0.24)',
-    borderColor: 'rgba(144, 172, 194, 0.25)',
-    wallGradient: ['#52616f', '#374452', '#242f39'],
-    wallGloss: ['rgba(214, 226, 238, 0.16)', 'rgba(127, 162, 191, 0.08)', 'rgba(19, 27, 37, 0.24)'],
-    wallStripe: 'rgba(170, 191, 210, 0.24)',
-    wallAccent: 'rgba(111, 184, 233, 0.14)',
-    wallBolt: 'rgba(185, 206, 223, 0.2)',
-    wallBorder: '#95aec2'
+  { // Level 1: Steel blue bunker (Wolfenstein vibes)
+    floorBase: ['#2a3848', '#1f2d3a'],
+    floorGradient: ['rgba(100, 140, 180, 0.15)', 'rgba(50, 70, 90, 0.12)', 'rgba(20, 30, 42, 0.2)'],
+    lineColor: 'rgba(100, 160, 200, 0.18)',
+    panelColor: 'rgba(180, 200, 220, 0.15)',
+    boltColor: 'rgba(140, 170, 200, 0.35)',
+    borderColor: 'rgba(120, 150, 180, 0.3)',
+    wallGradient: ['#5a6a7a', '#3e4e5e', '#252f3a'],
+    wallGloss: ['rgba(200, 220, 240, 0.12)', 'rgba(100, 140, 180, 0.06)', 'rgba(15, 20, 30, 0.2)'],
+    wallStripe: 'rgba(150, 180, 210, 0.3)',
+    wallAccent: 'rgba(80, 160, 220, 0.2)',
+    wallBolt: 'rgba(170, 200, 230, 0.3)',
+    wallBorder: '#7a9ab5'
   },
-  {
-    floorBase: ['#2f2a25', '#231f1a'],
-    floorGradient: ['rgba(191, 154, 104, 0.2)', 'rgba(112, 85, 55, 0.17)', 'rgba(45, 32, 22, 0.3)'],
-    lineColor: 'rgba(238, 185, 118, 0.11)',
-    panelColor: 'rgba(229, 210, 184, 0.12)',
-    boltColor: 'rgba(180, 145, 109, 0.23)',
-    borderColor: 'rgba(188, 153, 113, 0.25)',
-    wallGradient: ['#74624f', '#504135', '#342a22'],
-    wallGloss: ['rgba(232, 215, 193, 0.15)', 'rgba(188, 145, 97, 0.09)', 'rgba(47, 35, 24, 0.24)'],
-    wallStripe: 'rgba(218, 183, 138, 0.22)',
-    wallAccent: 'rgba(239, 173, 95, 0.14)',
-    wallBolt: 'rgba(226, 200, 168, 0.2)',
-    wallBorder: '#be976c'
+  { // Level 2: Brown stone dungeon (Doom E1 vibes)
+    floorBase: ['#382a20', '#2a1f16'],
+    floorGradient: ['rgba(180, 140, 90, 0.15)', 'rgba(100, 75, 45, 0.12)', 'rgba(40, 28, 18, 0.2)'],
+    lineColor: 'rgba(220, 170, 100, 0.18)',
+    panelColor: 'rgba(210, 190, 160, 0.15)',
+    boltColor: 'rgba(200, 160, 110, 0.35)',
+    borderColor: 'rgba(180, 140, 95, 0.3)',
+    wallGradient: ['#7a6248', '#554030', '#38281c'],
+    wallGloss: ['rgba(230, 210, 180, 0.12)', 'rgba(180, 140, 90, 0.06)', 'rgba(40, 30, 18, 0.2)'],
+    wallStripe: 'rgba(200, 170, 120, 0.3)',
+    wallAccent: 'rgba(220, 160, 80, 0.2)',
+    wallBolt: 'rgba(220, 190, 150, 0.3)',
+    wallBorder: '#a08058'
   },
-  {
-    floorBase: ['#2a252f', '#211c26'],
-    floorGradient: ['rgba(169, 124, 199, 0.2)', 'rgba(94, 71, 114, 0.18)', 'rgba(37, 29, 45, 0.3)'],
-    lineColor: 'rgba(208, 147, 241, 0.12)',
-    panelColor: 'rgba(221, 197, 232, 0.13)',
-    boltColor: 'rgba(165, 130, 186, 0.24)',
-    borderColor: 'rgba(168, 136, 191, 0.28)',
-    wallGradient: ['#665379', '#463755', '#2e2338'],
-    wallGloss: ['rgba(225, 208, 236, 0.15)', 'rgba(169, 123, 199, 0.09)', 'rgba(38, 28, 48, 0.26)'],
-    wallStripe: 'rgba(205, 177, 222, 0.23)',
-    wallAccent: 'rgba(194, 130, 232, 0.14)',
-    wallBolt: 'rgba(211, 186, 227, 0.2)',
-    wallBorder: '#ad89c9'
+  { // Level 3: Toxic green/dark (CyberDogs/Doom E3 vibes)
+    floorBase: ['#1a2a1a', '#142014'],
+    floorGradient: ['rgba(80, 180, 80, 0.12)', 'rgba(40, 90, 40, 0.1)', 'rgba(15, 35, 15, 0.18)'],
+    lineColor: 'rgba(100, 220, 100, 0.16)',
+    panelColor: 'rgba(150, 210, 150, 0.12)',
+    boltColor: 'rgba(120, 200, 120, 0.3)',
+    borderColor: 'rgba(80, 160, 80, 0.28)',
+    wallGradient: ['#3a5a3a', '#284228', '#1a2e1a'],
+    wallGloss: ['rgba(150, 230, 150, 0.1)', 'rgba(80, 160, 80, 0.05)', 'rgba(10, 25, 10, 0.18)'],
+    wallStripe: 'rgba(120, 200, 120, 0.25)',
+    wallAccent: 'rgba(100, 240, 100, 0.15)',
+    wallBolt: 'rgba(140, 220, 140, 0.28)',
+    wallBorder: '#5a9a5a'
   }
 ];
 
+// Maps: 3-tile-wide main hallway with rooms branching off via doors
+// Retro Wolfenstein/Doom/CyberDogs style. Spawn room ALWAYS safe (no enemies)
+// Enemies evenly distributed across non-spawn rooms only
 const maps = [
   {
-    // Level 1: Z-shaped path — Spawn→Cargo(right)→Central Hall(down)→Airlock(down)→Exit(right,locked)
-    // Branch rooms: Dock Clamps (left of hall), Storage (right of hall)
+    // Level 1: "Docking Ring"
+    // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17. Rooms branch N/S.
+    // ARMORY(S x:14-18), DOCK(N x:25-29), HUB(S x:35-39), EXIT(E x:45-50)
+    // ALL door gaps are exactly 1 tile wide. Walls fill rest of openings.
     name: 'Docking Ring',
-    width: 30,
-    height: 20,
+    width: 52, height: 26,
     walls: [
-      // outer boundary
-      [0, 0, 30, 1], [0, 19, 30, 1], [0, 0, 1, 20], [29, 0, 1, 20],
-      // --- TOP ROOMS (y:1-5): Spawn (x:1-8) | Cargo Bay (x:10-28) ---
-      [9, 1, 1, 2], [9, 4, 1, 2],       // wall x=9, door gap at (9,3)
-      // --- HORIZONTAL DIVIDER y=6 ---
-      [1, 6, 3, 1], [6, 6, 6, 1], [14, 6, 15, 1],
-      // gaps at x:4-5 (Spawn→Dock) and x:12-13 (Cargo→Hall)
-      // --- MIDDLE ROOMS (y:7-11) ---
-      // Dock Clamps (x:1-6) | Central Hall (x:8-19) | Storage (x:21-28)
-      [7, 7, 1, 1], [7, 9, 1, 3],       // wall x=7, door gap at (7,8)
-      [20, 7, 1, 2], [20, 10, 1, 2],    // wall x=20, door gap at (20,9)
-      // --- HORIZONTAL DIVIDER y=12 ---
-      [1, 12, 11, 1], [14, 12, 15, 1],
-      // gap at x:12-13 (Hall→Airlock)
-      // --- BOTTOM ROOMS (y:13-18): Airlock (x:1-13) | Exit Room (x:15-28) ---
-      [14, 13, 1, 2], [14, 16, 1, 3]    // wall x=14, locked door gap at (14,15)
+      [0,0,52,1],[0,25,52,1],[0,0,1,26],[51,0,1,26],
+      // spawn fill
+      [1,1,9,7],[1,19,9,6],
+      // spawn walls
+      [1,8,9,1],[1,18,9,1],
+      // spawn E wall: gap at y:12 only (1 tile)
+      [10,8,1,4],[10,13,1,5],
+      // corridor N wall y:10 — gap at x:27 only (1 tile for DOCK)
+      [10,10,17,1],[28,10,16,1],
+      // corridor S wall y:14 — gap at x:16 (ARMORY), gap at x:37 (HUB)
+      [10,14,6,1],[17,14,20,1],[38,14,6,1],
+      // fill above corridor (all solid except DOCK room x:25-29)
+      [10,1,15,9],                    // x:10-24
+      [24,1,1,9],[30,1,1,9],         // DOCK side walls
+      [31,1,13,9],                    // x:31-43
+      // fill below corridor (all solid except ARMORY x:14-18 and HUB x:35-39)
+      [10,15,4,10],                   // x:10-13
+      [13,15,1,10],[19,15,1,10],     // ARMORY side walls
+      [20,15,15,10],                  // x:20-34
+      [34,15,1,10],[40,15,1,10],     // HUB side walls
+      [41,15,3,10],                   // x:41-43
+      // exit room
+      [45,1,6,7],[45,19,6,6],
+      [45,8,6,1],[45,18,6,1],
+      // exit W wall: gap at y:12 only (1 tile, LOCKED)
+      [44,8,1,4],[44,13,1,5],
     ],
     doors: [
-      { x: 9, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 7, y: 8, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 20, y: 9, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 14, y: 15, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }
+      {x:10,y:12,w:1,h:1,locked:false,orientation:'v',swingDir:1},
+      {x:16,y:14,w:1,h:1,locked:false,orientation:'h',swingDir:1},
+      {x:27,y:10,w:1,h:1,locked:false,orientation:'h',swingDir:-1},
+      {x:37,y:14,w:1,h:1,locked:false,orientation:'h',swingDir:1},
+      {x:44,y:12,w:1,h:1,locked:true,orientation:'v',swingDir:1},
     ],
-    keyPickup: { x: 24.5, y: 3.5 },
+    keyPickup:{x:27.5,y:5},
+    spawn:{x:5,y:12.5},
+    exit:{x:48,y:12.5},
     features: [
-      { type: 'docking-clamp', x: 3.5, y: 9.5 },
-      { type: 'airlock-chamber', x: 7, y: 15.5 }
+      // corridor N wall paintings
+      {type:'painting-landscape',x:12,y:10.7},
+      {type:'painting-portrait',x:21,y:10.7},
+      {type:'painting-abstract',x:33,y:10.7},
+      {type:'painting-landscape',x:42,y:10.7},
+      // corridor lamp posts
+      {type:'lamp-post',x:11,y:12},{type:'lamp-post',x:17,y:12},
+      {type:'lamp-post',x:23,y:12},{type:'lamp-post',x:31,y:12},
+      {type:'lamp-post',x:38,y:12},{type:'lamp-post',x:43,y:12},
+      // corridor benches (S wall, visual only)
+      {type:'bench',x:12,y:13.3},{type:'bench',x:22,y:13.3},
+      {type:'bench',x:32,y:13.3},{type:'bench',x:41,y:13.3},
+      // corridor potted plants
+      {type:'potted-plant',x:19.5,y:10.5},{type:'potted-plant',x:34.5,y:14.5},
+      // spawn room
+      {type:'floor-rug',x:5,y:12.5},{type:'ceiling-fan',x:5,y:12.5},
+      {type:'painting-portrait',x:3,y:8.7},{type:'painting-landscape',x:7,y:8.7},
+      // armory
+      {type:'crate-stack',x:15,y:20},{type:'crate-stack',x:17,y:22},
+      {type:'wall-terminal',x:14.7,y:16},
+      // dock
+      {type:'wall-banner',x:27,y:1.7},{type:'painting-portrait',x:25.5,y:1.7},
+      {type:'floor-rug',x:27,y:5},
+      // hub
+      {type:'wall-pipes',x:35.7,y:17},{type:'wall-clock',x:37,y:15.7},
+      {type:'floor-grate',x:37,y:20},
+      // exit
+      {type:'wall-terminal',x:48,y:9.7},
     ],
     enemies: [
-      { x: 24, y: 4, hp: 55 },
-      { x: 24, y: 9, hp: 65, type: 'shield' },
-      { x: 15, y: 16, hp: 60, type: 'flanker' }
+      {x:16,y:20,hp:55},
+      {x:27,y:4,hp:55},
+      {x:37,y:19,hp:60,type:'shield'},
+      {x:48,y:13,hp:65,type:'flanker'},
     ],
     pickups: [
-      { x: 3.5, y: 3.5, type: 'ammo-handgun', value: 15 },
-      { x: 14.5, y: 10.5, type: 'health', value: 20 },
-      { x: 25.5, y: 10.5, type: 'armor', value: 20 }
+      {x:16,y:22,type:'ammo-handgun',value:15},
+      {x:27.5,y:8,type:'health',value:20},
+      {x:37,y:22,type:'armor',value:20},
     ],
-    spawn: { x: 4.5, y: 3.5 },
-    exit: { x: 22.5, y: 15.5 }
   },
   {
-    // Level 2: S-shaped path — Spawn→DataHall(right)→Server(right)→corridor(down)→
-    //   side room→left room→Core Room→locked exit sub-room
-    // Bottom path: corridor(down)→Storage→Terminal→Archive
+    // Level 2: "Core Archive"
+    // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17.
+    // LIBRARY(N x:14-18), SERVER(S x:23-28), ARCHIVE(N x:33-38), STUDY+EXIT(S x:43-50)
+    // ALL door gaps exactly 1 tile wide.
     name: 'Core Archive',
-    width: 32,
-    height: 22,
+    width: 52, height: 26,
     walls: [
-      // outer boundary
-      [0, 0, 32, 1], [0, 21, 32, 1], [0, 0, 1, 22], [31, 0, 1, 22],
-      // --- TOP ROOMS (y:1-6): Spawn (x:1-9) | Data Hall (x:11-20) | Server Bank (x:22-30) ---
-      [10, 1, 1, 2], [10, 4, 1, 3],     // wall x=10, door gap at (10,3)
-      [21, 1, 1, 2], [21, 4, 1, 3],     // wall x=21, door gap at (21,3)
-      // --- HORIZONTAL DIVIDER y=7 ---
-      [1, 7, 21, 1], [24, 7, 7, 1],
-      // gap at x:22-23 (Server→right corridor down)
-      // --- MIDDLE SECTION (y:8-14) ---
-      // Left room (x:1-10) | Core room (x:12-20) | corridor (x:22-23) | Side room (x:25-30)
-      [21, 8, 1, 7],                     // left wall of corridor
-      [24, 8, 1, 3], [24, 12, 1, 3],    // right wall of corridor, door gap at (24,11)
-      [11, 8, 1, 2], [11, 11, 1, 4],    // left/core divider, door gap at (11,10)
-      // Core room exit partition (y=11): locked door separates upper core from exit area
-      [12, 11, 3, 1], [16, 11, 5, 1],   // partition in core room, locked door gap at (15,11)
-      // --- HORIZONTAL DIVIDER y=15 ---
-      [1, 15, 7, 1], [10, 15, 12, 1], [24, 15, 7, 1],
-      // gaps at x:8-9 (left room→Archive) and x:22-23 (corridor→Storage)
-      // --- BOTTOM ROOMS (y:16-20): Archive (x:1-10) | Terminal (x:12-20) | Storage (x:22-30) ---
-      [11, 16, 1, 2], [11, 19, 1, 2],   // Archive/Terminal wall, door gap at (11,18)
-      [21, 16, 1, 2], [21, 19, 1, 2]    // Terminal/Storage wall, door gap at (21,18)
+      [0,0,52,1],[0,25,52,1],[0,0,1,26],[51,0,1,26],
+      [1,1,9,7],[1,19,9,6],
+      [1,8,9,1],[1,18,9,1],
+      // spawn E wall: gap at y:12 only
+      [10,8,1,4],[10,13,1,5],
+      // corridor N wall y:10 — gap at x:16 (LIBRARY), gap at x:35 (ARCHIVE)
+      [10,10,6,1],[17,10,18,1],[36,10,8,1],
+      // corridor S wall y:14 — gap at x:25 (SERVER), gap at x:43 (STUDY)
+      [10,14,15,1],[26,14,17,1],[44,14,1,1],
+      // fill above corridor
+      [10,1,3,9],                     // x:10-12
+      [13,1,1,9],[19,1,1,9],         // LIBRARY side walls
+      [20,1,13,9],                    // x:20-32
+      [32,1,1,9],[39,1,1,9],         // ARCHIVE side walls
+      [40,1,4,9],                     // x:40-43
+      // fill below corridor
+      [10,15,13,10],                  // x:10-22
+      [22,15,1,10],[29,15,1,10],     // SERVER side walls
+      [30,15,13,10],                  // x:30-42
+      // STUDY room x:44-50 y:15-24
+      // locked partition at y:20, gap at x:47
+      [44,20,3,1],[48,20,3,1],
+      // fill top-right
+      [45,1,6,9],
     ],
     doors: [
-      { x: 10, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 21, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 10, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 24, y: 11, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 21, y: 18, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 15, y: 11, w: 1, h: 1, locked: true, orientation: 'h', swingDir: 1 }
+      {x:10,y:12,w:1,h:1,locked:false,orientation:'v',swingDir:1},
+      {x:16,y:10,w:1,h:1,locked:false,orientation:'h',swingDir:-1},
+      {x:25,y:14,w:1,h:1,locked:false,orientation:'h',swingDir:1},
+      {x:35,y:10,w:1,h:1,locked:false,orientation:'h',swingDir:-1},
+      {x:43,y:14,w:1,h:1,locked:false,orientation:'h',swingDir:1},
+      {x:47,y:20,w:1,h:1,locked:true,orientation:'h',swingDir:1},
     ],
-    keyPickup: { x: 26.5, y: 3.5 },
+    keyPickup:{x:35.5,y:5},
+    spawn:{x:5,y:12.5},
+    exit:{x:47.5,y:22.5},
     features: [
-      { type: 'data-core', x: 16, y: 9.5 },
-      { type: 'server-racks', x: 26, y: 3.5 }
+      {type:'painting-landscape',x:12,y:10.7},{type:'painting-portrait',x:22,y:10.7},
+      {type:'painting-abstract',x:40,y:10.7},{type:'painting-landscape',x:31,y:10.7},
+      {type:'lamp-post',x:11,y:12},{type:'lamp-post',x:20,y:12},
+      {type:'lamp-post',x:31,y:12},{type:'lamp-post',x:41,y:12},
+      {type:'bench',x:12,y:13.3},{type:'bench',x:22,y:13.3},
+      {type:'bench',x:32,y:13.3},{type:'bench',x:41,y:13.3},
+      {type:'potted-plant',x:13.5,y:10.5},{type:'potted-plant',x:19.5,y:10.5},
+      {type:'floor-rug',x:5,y:12.5},{type:'ceiling-fan',x:5,y:12.5},
+      {type:'painting-portrait',x:3,y:8.7},{type:'painting-landscape',x:7,y:8.7},
+      {type:'wall-bookshelf',x:14.7,y:3},{type:'wall-bookshelf',x:14.7,y:7},
+      {type:'wall-terminal',x:23.7,y:17},{type:'wall-pipes',x:23.7,y:21},
+      {type:'wall-banner',x:35,y:1.7},{type:'floor-rug',x:16,y:5},
+      {type:'floor-rug',x:47,y:17},{type:'wall-clock',x:47,y:15.7},
+      {type:'crate-stack',x:25,y:22},
     ],
     enemies: [
-      { x: 28, y: 4, hp: 75, type: 'shield' },
-      { x: 27, y: 11, hp: 65 },
-      { x: 16, y: 13, hp: 70 },
-      { x: 26, y: 18, hp: 65 },
-      { x: 6, y: 18, hp: 50, type: 'dog' }
+      {x:16,y:4,hp:65},
+      {x:25,y:20,hp:70,type:'shield'},
+      {x:35,y:4,hp:75},
+      {x:47,y:17,hp:65},
+      {x:45,y:22,hp:50,type:'dog'},
     ],
     pickups: [
-      { x: 2.5, y: 18.5, type: 'ammo-handgun', value: 20 },
-      { x: 26.5, y: 1.5, type: 'health', value: 25 },
-      { x: 7.5, y: 4.5, type: 'health', value: 20 },
-      { x: 16.5, y: 13.5, type: 'ammo-shotgun', value: 4 },
-      { x: 6.5, y: 9.5, type: 'armor', value: 25 }
+      {x:16,y:8,type:'ammo-handgun',value:20},
+      {x:25,y:22,type:'health',value:25},
+      {x:35.5,y:8,type:'armor',value:25},
+      {x:47,y:19,type:'ammo-shotgun',value:4},
     ],
-    spawn: { x: 5.5, y: 3.5 },
-    exit: { x: 16.5, y: 13.5 }
   },
   {
-    // Level 3: Snake path — Spawn→Decon(right)→Monitor(right)→corridor(down-right)→
-    //   Cooling→Reactor(left)→Maintenance(left)→corridor(down-left)→
-    //   Utility→Control(right)→locked door→Exit(right)
+    // Level 3: "Reactor Vault"
+    // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17.
+    // DECON(N x:14-18), REACTOR(S x:22-28), COOLING(N x:32-38), CONTROL+EXIT(S x:43-50)
+    // ALL door gaps exactly 1 tile wide.
     name: 'Reactor Vault',
-    width: 34,
-    height: 24,
+    width: 52, height: 26,
     walls: [
-      // outer boundary
-      [0, 0, 34, 1], [0, 23, 34, 1], [0, 0, 1, 24], [33, 0, 1, 24],
-      // --- TOP ROOMS (y:1-6): Spawn (x:1-10) | Decon (x:12-22) | Monitor (x:24-32) ---
-      [11, 1, 1, 2], [11, 4, 1, 3],     // wall x=11, door gap at (11,3)
-      [23, 1, 1, 2], [23, 4, 1, 3],     // wall x=23, door gap at (23,3)
-      // --- HORIZONTAL DIVIDER y=7 and y=8 (corridor gap x:25-27) ---
-      [1, 7, 24, 1], [28, 7, 5, 1],
-      [1, 8, 24, 1], [28, 8, 5, 1],
-      // gap at x:25-27 (Monitor→Cooling corridor, 3 tiles wide)
-      // --- MIDDLE ROOMS (y:9-15) ---
-      // Maintenance (x:1-10) | Reactor (x:12-22) | Cooling (x:24-32)
-      [11, 9, 1, 3], [11, 13, 1, 3],    // wall x=11, door gap at (11,12)
-      [23, 9, 1, 3], [23, 13, 1, 3],    // wall x=23, door gap at (23,12)
-      // --- HORIZONTAL DIVIDER y=16 and y=17 (corridor gap x:7-9) ---
-      [1, 16, 6, 1], [10, 16, 23, 1],
-      [1, 17, 6, 1], [10, 17, 23, 1],
-      // gap at x:7-9 (Maintenance→Utility corridor, 3 tiles wide)
-      // --- BOTTOM ROOMS (y:18-22) ---
-      // Utility (x:1-10) | Control (x:12-22) | Exit (x:24-32)
-      [11, 18, 1, 2], [11, 21, 1, 2],   // wall x=11, door gap at (11,20)
-      [23, 18, 1, 2], [23, 21, 1, 2]    // wall x=23, locked door gap at (23,20)
+      [0,0,52,1],[0,25,52,1],[0,0,1,26],[51,0,1,26],
+      [1,1,9,7],[1,19,9,6],
+      [1,8,9,1],[1,18,9,1],
+      // spawn E wall: gap at y:12 only
+      [10,8,1,4],[10,13,1,5],
+      // corridor N wall y:10 — gap at x:16 (DECON), gap at x:35 (COOLING)
+      [10,10,6,1],[17,10,18,1],[36,10,8,1],
+      // corridor S wall y:14 — gap at x:25 (REACTOR), gap at x:43 (CONTROL)
+      [10,14,15,1],[26,14,17,1],[44,14,1,1],
+      // fill above corridor
+      [10,1,3,9],
+      [13,1,1,9],[19,1,1,9],         // DECON side walls
+      [20,1,12,9],
+      [31,1,1,9],[39,1,1,9],         // COOLING side walls
+      [40,1,4,9],
+      // fill below corridor
+      [10,15,12,10],
+      [21,15,1,10],[29,15,1,10],     // REACTOR side walls
+      [30,15,13,10],
+      // CONTROL+EXIT room x:44-50 y:15-24
+      // locked partition at y:20, gap at x:47
+      [44,20,3,1],[48,20,3,1],
+      // fill top-right
+      [45,1,6,9],
     ],
     doors: [
-      { x: 11, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 23, y: 3, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 23, y: 12, w: 1, h: 1, locked: false, orientation: 'v', swingDir: 1 },
-      { x: 11, y: 20, w: 1, h: 1, locked: false, orientation: 'v', swingDir: -1 },
-      { x: 23, y: 20, w: 1, h: 1, locked: true, orientation: 'v', swingDir: 1 }
+      {x:10,y:12,w:1,h:1,locked:false,orientation:'v',swingDir:1},
+      {x:16,y:10,w:1,h:1,locked:false,orientation:'h',swingDir:-1},
+      {x:25,y:14,w:1,h:1,locked:false,orientation:'h',swingDir:1},
+      {x:35,y:10,w:1,h:1,locked:false,orientation:'h',swingDir:-1},
+      {x:43,y:14,w:1,h:1,locked:false,orientation:'h',swingDir:1},
+      {x:47,y:20,w:1,h:1,locked:true,orientation:'h',swingDir:1},
     ],
-    keyPickup: { x: 5.5, y: 12.5 },
+    keyPickup:{x:35.5,y:5},
+    spawn:{x:5,y:12.5},
+    exit:{x:47.5,y:22.5},
     features: [
-      { type: 'reactor-core', x: 17, y: 12 },
-      { type: 'coolant-pipes', x: 28, y: 12 }
+      {type:'painting-landscape',x:12,y:10.7},{type:'painting-portrait',x:22,y:10.7},
+      {type:'painting-abstract',x:40,y:10.7},
+      {type:'lamp-post',x:11,y:12},{type:'lamp-post',x:20,y:12},
+      {type:'lamp-post',x:30,y:12},{type:'lamp-post',x:40,y:12},
+      {type:'bench',x:12,y:13.3},{type:'bench',x:22,y:13.3},
+      {type:'bench',x:31,y:13.3},{type:'bench',x:41,y:13.3},
+      {type:'potted-plant',x:13.5,y:10.5},{type:'potted-plant',x:19.5,y:10.5},
+      {type:'potted-plant',x:31.5,y:10.5},{type:'potted-plant',x:39.5,y:10.5},
+      {type:'floor-rug',x:5,y:12.5},{type:'ceiling-fan',x:5,y:12.5},
+      {type:'painting-portrait',x:3,y:8.7},{type:'painting-landscape',x:7,y:8.7},
+      {type:'wall-banner',x:16,y:1.7},
+      {type:'wall-pipes',x:22.7,y:17},{type:'wall-pipes',x:22.7,y:21},
+      {type:'wall-terminal',x:44,y:15.7},{type:'wall-terminal',x:44,y:21.7},
+      {type:'wall-clock',x:35,y:1.7},{type:'floor-rug',x:25,y:20},
+      {type:'floor-grate',x:35,y:5},{type:'crate-stack',x:25,y:22},
+      {type:'crate-stack',x:47,y:17},{type:'wall-bookshelf',x:39.3,y:4},
     ],
     enemies: [
-      { x: 20, y: 5, hp: 90 },
-      { x: 28, y: 4, hp: 90, type: 'shield' },
-      { x: 5, y: 13, hp: 85 },
-      { x: 17, y: 10, hp: 95 },
-      { x: 17, y: 14, hp: 95, type: 'flanker' },
-      { x: 28, y: 12, hp: 100 },
-      { x: 17, y: 20, hp: 105 },
-      { x: 5, y: 20, hp: 70, type: 'dog' }
+      {x:16,y:4,hp:90},
+      {x:25,y:20,hp:95},{x:27,y:18,hp:95,type:'flanker'},
+      {x:35,y:4,hp:90,type:'shield'},{x:37,y:6,hp:85},
+      {x:45,y:17,hp:100},{x:48,y:22,hp:70,type:'dog'},
     ],
     pickups: [
-      { x: 2.5, y: 20.5, type: 'ammo-sniper', value: 3 },
-      { x: 17.5, y: 3.5, type: 'health', value: 25 },
-      { x: 17.5, y: 19.5, type: 'armor', value: 35 },
-      { x: 28.5, y: 3.5, type: 'ammo-handgun', value: 15 }
+      {x:16,y:8,type:'health',value:25},
+      {x:25,y:22,type:'ammo-handgun',value:15},
+      {x:35.5,y:8,type:'armor',value:35},
+      {x:47,y:19,type:'ammo-sniper',value:3},
     ],
-    spawn: { x: 5.5, y: 3.5 },
-    exit: { x: 28.5, y: 20.5 }
-  }
+  },
 ];
 
 const game = {
@@ -449,6 +519,7 @@ const game = {
   pickups: [],
   doors: [],
   hasKey: false,
+  doorInteract: false,
   startGrace: 0,
   keys: new Set(),
   mouse: { x: canvas.width / 2, y: canvas.height / 2, down: false },
@@ -568,10 +639,15 @@ function startMap(index, keepPlayerState = true) {
       playerSpawn.x,
       playerSpawn.y
     );
-    // Enforce minimum spawn distance from player (14 tiles)
+    // Enforce: no enemies in spawn room + minimum distance from player
     const MIN_ENEMY_SPAWN_DIST = 14 * TILE;
+    const inSpawnRoom = (px, py) => {
+      const tx = px / TILE;
+      const ty = py / TILE;
+      return tx >= 0 && tx <= 10 && ty >= 7 && ty <= 19;
+    };
     const spawnDist = Math.hypot(safeSpawn.x - playerSpawn.x, safeSpawn.y - playerSpawn.y);
-    if (spawnDist < MIN_ENEMY_SPAWN_DIST) {
+    if (spawnDist < MIN_ENEMY_SPAWN_DIST || inSpawnRoom(safeSpawn.x, safeSpawn.y)) {
       const origin = worldToTile(playerSpawn.x, playerSpawn.y);
       const reachable = buildReachableTileSet(origin, radius);
       let bestPoint = null;
@@ -583,7 +659,7 @@ function startMap(index, keepPlayerState = true) {
         const [tx, ty] = key.split(',').map(Number);
         const center = tileCenter(tx, ty);
         const dPlayer = Math.hypot(center.x - playerSpawn.x, center.y - playerSpawn.y);
-        if (dPlayer < MIN_ENEMY_SPAWN_DIST) continue;
+        if (dPlayer < MIN_ENEMY_SPAWN_DIST || inSpawnRoom(center.x, center.y)) continue;
         const dIntended = Math.hypot(center.x - intendedX, center.y - intendedY);
         if (!bestPoint || dIntended < bestDistFromIntended) {
           bestPoint = center;
@@ -1347,7 +1423,8 @@ function update(dt) {
     }
   }
 
-  // door opening: unlocked doors swing open, hold 2s, then swing closed. locked doors stay open.
+  // door opening: player must press SPACE near a door. Doors hold open 3s then close.
+  // Enemies cannot activate doors and cannot get stuck in closing doors.
   for (const door of game.doors) {
     const doorCenterX = (door.x + door.w / 2) * TILE;
     const doorCenterY = (door.y + door.h / 2) * TILE;
@@ -1360,16 +1437,32 @@ function update(dt) {
         door.openAnim = Math.min(1, door.openAnim + dt * 2);
         if (door.openAnim >= 1) {
           door.phase = 'hold';
-          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 2;
+          door.holdTimer = door.locked ? Number.POSITIVE_INFINITY : 3;
         }
       } else if (phase === 'hold') {
         if (!door.locked) {
           if (dist < TILE * 2) {
-            door.holdTimer = 2; // reset hold timer while player is nearby
+            door.holdTimer = 3; // reset hold timer while player is nearby
           } else {
             door.holdTimer -= dt;
             if (door.holdTimer <= 0) {
-              door.phase = 'closing';
+              // Check no enemy is inside the door tile before closing
+              const doorRect = { x: door.x * TILE, y: door.y * TILE, w: door.w * TILE, h: door.h * TILE };
+              let enemyInDoor = false;
+              for (const enemy of game.enemies) {
+                if (enemy.hp <= 0) continue;
+                if (circleRectCollision(enemy.x, enemy.y, enemy.radius + 4, doorRect)) {
+                  enemyInDoor = true;
+                  break;
+                }
+              }
+              // Also check player
+              if (circleRectCollision(p.x, p.y, PLAYER_RADIUS, doorRect)) enemyInDoor = true;
+              if (!enemyInDoor) {
+                door.phase = 'closing';
+              } else {
+                door.holdTimer = 0.5; // retry shortly
+              }
             }
           }
         }
@@ -1380,33 +1473,37 @@ function update(dt) {
           door.phase = 'closed';
           game.navGridCache.clear();
         }
-        // if player approaches while closing, swing back open
-        if (dist < TILE * 1.5 && !door.locked) {
-          door.phase = 'opening';
-        }
       }
       continue;
     }
 
+    // Show prompt when near a closed door
     if (dist < TILE * 1.5) {
-      if (!door.locked) {
-        door.open = true;
-        door.phase = 'opening';
-        door.openAnim = 0;
-        game.navGridCache.clear();
-        game.message = 'Door opened.';
-      } else if (game.hasKey) {
-        door.open = true;
-        door.phase = 'opening';
-        door.openAnim = 0;
-        game.navGridCache.clear();
-        game.message = 'Door unlocked!';
-      } else if (!game.doorMsgCooldown || game.doorMsgCooldown <= 0) {
-        game.message = 'Door is locked. Find the key!';
-        game.doorMsgCooldown = 1.5;
+      door.showPrompt = true;
+      if (game.doorInteract) {
+        game.doorInteract = false;
+        if (!door.locked) {
+          door.open = true;
+          door.phase = 'opening';
+          door.openAnim = 0;
+          game.navGridCache.clear();
+          game.message = 'Door opened.';
+        } else if (game.hasKey) {
+          door.open = true;
+          door.phase = 'opening';
+          door.openAnim = 0;
+          game.navGridCache.clear();
+          game.message = 'Door unlocked!';
+        } else if (!game.doorMsgCooldown || game.doorMsgCooldown <= 0) {
+          game.message = 'Door is locked. Find the key!';
+          game.doorMsgCooldown = 1.5;
+        }
       }
+    } else {
+      door.showPrompt = false;
     }
   }
+  game.doorInteract = false; // consume the interact flag
   if (game.doorMsgCooldown > 0) game.doorMsgCooldown -= dt;
 
   game.bullets = game.bullets.filter((b) => {
@@ -1490,7 +1587,7 @@ function drawSpaceParallax(camera) {
         ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
       }
 
-      ctx.fillRect(drawX, drawY, size, size);
+      ctx.fillRect(Math.round(drawX), Math.round(drawY), Math.ceil(size), Math.ceil(size));
     }
   }
 }
@@ -1524,24 +1621,23 @@ function drawGrid(camera) {
       ctx.fillStyle = floorGrad;
       ctx.fillRect(sx, sy, TILE, TILE);
 
-      const pulse = ((gx * 17 + gy * 11 + Math.floor(performance.now() * 0.004)) % 12) / 12;
-      ctx.fillStyle = theme.lineColor.replace('0.11', (0.06 + pulse * 0.05).toFixed(3)).replace('0.12', (0.06 + pulse * 0.05).toFixed(3));
-      ctx.fillRect(sx + 6, sy + 6, TILE - 12, 1.7);
-      ctx.fillRect(sx + 6, sy + TILE - 8, TILE - 12, 1.4);
+      // retro floor detail — blocky lines and corner bolts
+      ctx.fillStyle = theme.lineColor;
+      ctx.fillRect(sx + 8, sy + 8, TILE - 16, 2);
+      ctx.fillRect(sx + 8, sy + TILE - 10, TILE - 16, 2);
 
       ctx.fillStyle = theme.panelColor;
-      ctx.fillRect(sx + TILE * 0.28, sy + TILE * 0.18, TILE * 0.44, 2);
-      ctx.fillRect(sx + TILE * 0.18, sy + TILE * 0.72, TILE * 0.64, 1.5);
+      ctx.fillRect(sx + TILE * 0.25, sy + TILE * 0.2, TILE * 0.5, 2);
+      ctx.fillRect(sx + TILE * 0.2, sy + TILE * 0.75, TILE * 0.6, 2);
 
       ctx.fillStyle = theme.boltColor;
-      ctx.beginPath();
-      ctx.arc(sx + 12, sy + 12, 2.1, 0, Math.PI * 2);
-      ctx.arc(sx + TILE - 12, sy + 12, 2.1, 0, Math.PI * 2);
-      ctx.arc(sx + 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
-      ctx.arc(sx + TILE - 12, sy + TILE - 12, 2.1, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(sx + 8, sy + 8, 3, 3);
+      ctx.fillRect(sx + TILE - 11, sy + 8, 3, 3);
+      ctx.fillRect(sx + 8, sy + TILE - 11, 3, 3);
+      ctx.fillRect(sx + TILE - 11, sy + TILE - 11, 3, 3);
 
       ctx.strokeStyle = theme.borderColor;
+      ctx.lineWidth = 0.5;
       ctx.strokeRect(sx + 0.5, sy + 0.5, TILE - 1, TILE - 1);
     }
   }
@@ -1563,28 +1659,26 @@ function drawSciWall(x, y, w, h, theme) {
   ctx.fillRect(x, y, w, h);
 
   ctx.fillStyle = theme.wallStripe;
-  for (let px = x + 6; px < x + w - 6; px += 18) {
-    ctx.fillRect(px, y + 5, 10, 2);
-    ctx.fillRect(px, y + h - 7, 10, 1.6);
+  for (let px = x + 8; px < x + w - 8; px += 24) {
+    ctx.fillRect(px, y + 4, 12, 1.2);
+    ctx.fillRect(px, y + h - 5.5, 12, 1);
   }
 
   ctx.fillStyle = theme.wallAccent;
-  for (let py = y + 8; py < y + h - 8; py += 20) {
-    ctx.fillRect(x + 5, py, 2, 10);
-    ctx.fillRect(x + w - 7, py, 2, 10);
+  for (let py = y + 10; py < y + h - 10; py += 28) {
+    ctx.fillRect(x + 4, py, 1.5, 12);
+    ctx.fillRect(x + w - 5.5, py, 1.5, 12);
   }
 
   ctx.fillStyle = theme.wallBolt;
-  for (let py = y + 14; py < y + h - 12; py += 28) {
-    ctx.beginPath();
-    ctx.arc(x + 10, py, 2, 0, Math.PI * 2);
-    ctx.arc(x + w - 10, py, 2, 0, Math.PI * 2);
-    ctx.fill();
+  for (let py = y + 16; py < y + h - 14; py += 36) {
+    ctx.fillRect(x + 6, py - 1, 3, 3);
+    ctx.fillRect(x + w - 9, py - 1, 3, 3);
   }
 
   ctx.strokeStyle = theme.wallBorder;
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 }
 
 function drawKeyPickup(x, y) {
@@ -1655,21 +1749,20 @@ function drawDoorPanel(x, y, w, h, locked) {
   }
 
   // cross bars for reinforced look
-  ctx.strokeStyle = 'rgba(180, 140, 60, 0.5)';
-  ctx.lineWidth = 1.5;
-  const longDim = Math.max(w, h);
+  ctx.strokeStyle = 'rgba(180, 140, 60, 0.35)';
+  ctx.lineWidth = 1;
   if (h > w) {
-    for (let stripe = y + 8; stripe < y + h - 4; stripe += 12) {
+    for (let stripe = y + 10; stripe < y + h - 6; stripe += 16) {
       ctx.beginPath();
-      ctx.moveTo(x + 2, stripe);
-      ctx.lineTo(x + w - 2, stripe);
+      ctx.moveTo(x + 3, stripe);
+      ctx.lineTo(x + w - 3, stripe);
       ctx.stroke();
     }
   } else {
-    for (let stripe = x + 8; stripe < x + w - 4; stripe += 12) {
+    for (let stripe = x + 10; stripe < x + w - 6; stripe += 16) {
       ctx.beginPath();
-      ctx.moveTo(stripe, y + 2);
-      ctx.lineTo(stripe, y + h - 2);
+      ctx.moveTo(stripe, y + 3);
+      ctx.lineTo(stripe, y + h - 3);
       ctx.stroke();
     }
   }
@@ -1731,6 +1824,21 @@ function drawMapFeatures(camera) {
       case 'server-racks': drawServerRacks(s.x, s.y); break;
       case 'reactor-core': drawReactorCore(s.x, s.y); break;
       case 'coolant-pipes': drawCoolantPipes(s.x, s.y); break;
+      case 'painting-landscape': drawPaintingLandscape(s.x, s.y); break;
+      case 'painting-portrait': drawPaintingPortrait(s.x, s.y); break;
+      case 'painting-abstract': drawPaintingAbstract(s.x, s.y); break;
+      case 'wall-terminal': drawWallTerminal(s.x, s.y); break;
+      case 'wall-pipes': drawWallPipes(s.x, s.y); break;
+      case 'floor-grate': drawFloorGrate(s.x, s.y); break;
+      case 'wall-banner': drawWallBanner(s.x, s.y); break;
+      case 'floor-rug': drawFloorRug(s.x, s.y); break;
+      case 'lamp-post': drawLampPost(s.x, s.y); break;
+      case 'ceiling-fan': drawCeilingFan(s.x, s.y); break;
+      case 'potted-plant': drawPottedPlant(s.x, s.y); break;
+      case 'crate-stack': drawCrateStack(s.x, s.y); break;
+      case 'wall-clock': drawWallClock(s.x, s.y); break;
+      case 'wall-bookshelf': drawWallBookshelf(s.x, s.y); break;
+      case 'bench': drawBench(s.x, s.y); break;
     }
   }
 }
@@ -1975,6 +2083,430 @@ function drawCoolantPipes(x, y) {
   ctx.restore();
 }
 
+// === DECORATIVE ROOM DETAILS ===
+
+function drawPaintingLandscape(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // frame
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(-24, -18, 48, 36);
+  ctx.strokeStyle = '#d4a44a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-24, -18, 48, 36);
+  // canvas background — sky
+  const sky = ctx.createLinearGradient(-20, -14, -20, 4);
+  sky.addColorStop(0, '#4a7ab5');
+  sky.addColorStop(0.6, '#7ab5d4');
+  sky.addColorStop(1, '#c4daa4');
+  ctx.fillStyle = sky;
+  ctx.fillRect(-20, -14, 40, 28);
+  // mountains
+  ctx.fillStyle = '#5a7a5a';
+  ctx.beginPath();
+  ctx.moveTo(-20, 8); ctx.lineTo(-8, -6); ctx.lineTo(4, 4); ctx.lineTo(14, -4); ctx.lineTo(20, 8);
+  ctx.closePath(); ctx.fill();
+  // ground
+  ctx.fillStyle = '#4a6a3a';
+  ctx.fillRect(-20, 8, 40, 6);
+  // sun
+  ctx.fillStyle = '#ffe866';
+  ctx.beginPath(); ctx.arc(12, -8, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPaintingPortrait(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // ornate frame
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(-20, -24, 40, 48);
+  ctx.strokeStyle = '#c89a44';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(-20, -24, 40, 48);
+  ctx.strokeStyle = '#a07a30';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-17, -21, 34, 42);
+  // dark background
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(-15, -19, 30, 38);
+  // face oval
+  const faceGrad = ctx.createRadialGradient(0, -4, 2, 0, -4, 12);
+  faceGrad.addColorStop(0, '#e8c8a0');
+  faceGrad.addColorStop(1, '#b8905a');
+  ctx.fillStyle = faceGrad;
+  ctx.beginPath(); ctx.ellipse(0, -4, 8, 11, 0, 0, Math.PI * 2); ctx.fill();
+  // eyes
+  ctx.fillStyle = '#2a3a4a';
+  ctx.fillRect(-4, -7, 2.5, 2); ctx.fillRect(1.5, -7, 2.5, 2);
+  // collar
+  ctx.fillStyle = '#4a5a8a';
+  ctx.fillRect(-10, 8, 20, 10);
+  ctx.restore();
+}
+
+function drawPaintingAbstract(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // frame
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(-22, -18, 44, 36);
+  ctx.strokeStyle = '#8a8aaa';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-22, -18, 44, 36);
+  // abstract shapes
+  ctx.fillStyle = 'rgba(200, 60, 80, 0.7)';
+  ctx.beginPath(); ctx.arc(-6, -4, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(60, 120, 200, 0.6)';
+  ctx.fillRect(2, -8, 14, 14);
+  ctx.fillStyle = 'rgba(220, 180, 40, 0.65)';
+  ctx.beginPath();
+  ctx.moveTo(-14, 10); ctx.lineTo(-4, -6); ctx.lineTo(6, 10);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-16, 4); ctx.bezierCurveTo(-8, -12, 8, 16, 16, 0); ctx.stroke();
+  ctx.restore();
+}
+
+function drawWallTerminal(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.002;
+  // terminal body
+  ctx.fillStyle = '#1a2233';
+  ctx.fillRect(-16, -20, 32, 40);
+  ctx.strokeStyle = '#3a5a7a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-16, -20, 32, 40);
+  // screen
+  const screenGlow = 0.4 + Math.sin(t) * 0.1;
+  ctx.fillStyle = `rgba(30, 80, 60, ${screenGlow})`;
+  ctx.fillRect(-12, -16, 24, 20);
+  // scan lines
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = `rgba(0, 255, 120, ${0.15 + Math.sin(t + i * 0.5) * 0.08})`;
+    ctx.fillRect(-11, -15 + i * 2.5, 22, 1);
+  }
+  // blinking cursor
+  if (Math.sin(t * 3) > 0) {
+    ctx.fillStyle = '#00ff88';
+    ctx.fillRect(-8, -4, 5, 2);
+  }
+  // keyboard area
+  ctx.fillStyle = '#2a3a4a';
+  ctx.fillRect(-10, 6, 20, 10);
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 5; c++) {
+      ctx.fillStyle = '#4a5a6a';
+      ctx.fillRect(-8 + c * 4, 7 + r * 3, 3, 2);
+    }
+  }
+  ctx.restore();
+}
+
+function drawWallPipes(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // vertical pipes
+  ctx.strokeStyle = '#5a7080';
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-12, -28); ctx.lineTo(-12, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -28); ctx.lineTo(0, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(12, -28); ctx.lineTo(12, 28); ctx.stroke();
+  // pipe highlights
+  ctx.strokeStyle = '#7a9aaa';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-13.5, -28); ctx.lineTo(-13.5, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-1.5, -28); ctx.lineTo(-1.5, 28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10.5, -28); ctx.lineTo(10.5, 28); ctx.stroke();
+  // connectors
+  ctx.fillStyle = '#6a8090';
+  ctx.fillRect(-15, -8, 7, 4);
+  ctx.fillRect(-3, 4, 7, 4);
+  ctx.fillRect(9, -14, 7, 4);
+  // valve wheel
+  ctx.strokeStyle = '#aa6644';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, -18, 5, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#cc8855';
+  ctx.beginPath(); ctx.arc(0, -18, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawFloorGrate(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(40, 50, 60, 0.6)';
+  ctx.fillRect(-24, -24, 48, 48);
+  ctx.strokeStyle = 'rgba(80, 100, 120, 0.5)';
+  ctx.lineWidth = 1;
+  // grate lines
+  for (let i = -20; i <= 20; i += 8) {
+    ctx.beginPath(); ctx.moveTo(i, -22); ctx.lineTo(i, 22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-22, i); ctx.lineTo(22, i); ctx.stroke();
+  }
+  // bolts at corners
+  ctx.fillStyle = 'rgba(120, 140, 160, 0.4)';
+  ctx.beginPath(); ctx.arc(-20, -20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(20, -20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-20, 20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(20, 20, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawWallBanner(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // banner pole
+  ctx.fillStyle = '#8a7a5a';
+  ctx.fillRect(-20, -22, 40, 3);
+  // fabric
+  const t = performance.now() * 0.001;
+  ctx.fillStyle = '#6a2030';
+  ctx.beginPath();
+  ctx.moveTo(-16, -19);
+  ctx.lineTo(16, -19);
+  ctx.lineTo(14, 16 + Math.sin(t) * 2);
+  ctx.lineTo(0, 22 + Math.sin(t + 1) * 2);
+  ctx.lineTo(-14, 16 + Math.sin(t + 2) * 2);
+  ctx.closePath();
+  ctx.fill();
+  // emblem
+  ctx.fillStyle = '#d4a44a';
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6a2030';
+  ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+  // fringe
+  ctx.strokeStyle = '#d4a44a';
+  ctx.lineWidth = 1;
+  for (let i = -12; i <= 12; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(i, 16 + Math.sin(t + i * 0.3) * 2);
+    ctx.lineTo(i, 20 + Math.sin(t + i * 0.3) * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawFloorRug(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // rug body
+  ctx.fillStyle = 'rgba(100, 40, 50, 0.35)';
+  ctx.fillRect(-30, -20, 60, 40);
+  // border pattern
+  ctx.strokeStyle = 'rgba(180, 120, 60, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-28, -18, 56, 36);
+  ctx.strokeStyle = 'rgba(160, 100, 50, 0.2)';
+  ctx.strokeRect(-24, -14, 48, 28);
+  // center design
+  ctx.fillStyle = 'rgba(180, 140, 80, 0.2)';
+  ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(200, 160, 90, 0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawLampPost(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.003;
+  const flicker = 0.75 + Math.sin(t * 2.1) * 0.1 + Math.sin(t * 4.8) * 0.05;
+  // ground glow (circle of light on floor)
+  const glow = ctx.createRadialGradient(0, 0, 3, 0, 0, 28);
+  glow.addColorStop(0, `rgba(255, 220, 150, ${flicker * 0.22})`);
+  glow.addColorStop(0.6, `rgba(255, 200, 120, ${flicker * 0.08})`);
+  glow.addColorStop(1, 'rgba(255, 180, 80, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill();
+  // post base (top-down: small dark circle)
+  ctx.fillStyle = '#3a3a3a';
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  // post top rim
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.stroke();
+  // lamp head (bright center dot)
+  ctx.fillStyle = `rgba(255, 240, 200, ${flicker})`;
+  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  // inner bright glow
+  const inner = ctx.createRadialGradient(0, 0, 1, 0, 0, 8);
+  inner.addColorStop(0, `rgba(255, 240, 200, ${flicker * 0.6})`);
+  inner.addColorStop(1, 'rgba(255, 220, 150, 0)');
+  ctx.fillStyle = inner;
+  ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawCeilingFan(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.002;
+  // shadow on floor
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 28, 28, 0, 0, Math.PI * 2); ctx.fill();
+  // blades
+  ctx.strokeStyle = 'rgba(100, 90, 70, 0.3)';
+  ctx.lineWidth = 6;
+  for (let i = 0; i < 4; i++) {
+    const a = t + (i / 4) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(a) * 24, Math.sin(a) * 24);
+    ctx.stroke();
+  }
+  // center hub
+  ctx.fillStyle = 'rgba(80, 70, 60, 0.4)';
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPottedPlant(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // pot
+  ctx.fillStyle = '#8a5533';
+  ctx.fillRect(-8, 4, 16, 12);
+  ctx.fillStyle = '#6a3a1a';
+  ctx.fillRect(-10, 2, 20, 4);
+  // soil
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(-7, 2, 14, 3);
+  // leaves
+  ctx.fillStyle = '#3a7a3a';
+  ctx.beginPath(); ctx.ellipse(-6, -4, 6, 8, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4a8a4a';
+  ctx.beginPath(); ctx.ellipse(5, -6, 5, 9, 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2a6a2a';
+  ctx.beginPath(); ctx.ellipse(0, -10, 4, 7, 0, 0, Math.PI * 2); ctx.fill();
+  // stem
+  ctx.strokeStyle = '#2a5a2a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(0, -6); ctx.stroke();
+  ctx.restore();
+}
+
+function drawCrateStack(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // bottom crate
+  ctx.fillStyle = '#5a4a30';
+  ctx.fillRect(-18, -4, 36, 24);
+  ctx.strokeStyle = '#3a3020';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-18, -4, 36, 24);
+  // cross bars
+  ctx.strokeStyle = '#7a6a4a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-18, -4); ctx.lineTo(18, 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(18, -4); ctx.lineTo(-18, 20); ctx.stroke();
+  // top crate (smaller, offset)
+  ctx.fillStyle = '#6a5a3a';
+  ctx.fillRect(-12, -20, 24, 18);
+  ctx.strokeStyle = '#4a3a20';
+  ctx.strokeRect(-12, -20, 24, 18);
+  // label
+  ctx.fillStyle = '#aa9a6a';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('CARGO', 0, -9);
+  ctx.restore();
+}
+
+function drawWallClock(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  const t = performance.now() * 0.001;
+  // clock face
+  ctx.fillStyle = '#e8e0d0';
+  ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#5a4a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.stroke();
+  // hour marks
+  ctx.fillStyle = '#3a3030';
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    ctx.fillRect(Math.cos(a) * 11 - 1, Math.sin(a) * 11 - 1, 2, 2);
+  }
+  // hour hand
+  const hourAngle = (t * 0.01) % (Math.PI * 2);
+  ctx.strokeStyle = '#2a2020';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(hourAngle - Math.PI / 2) * 7, Math.sin(hourAngle - Math.PI / 2) * 7);
+  ctx.stroke();
+  // minute hand
+  const minAngle = (t * 0.1) % (Math.PI * 2);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(minAngle - Math.PI / 2) * 10, Math.sin(minAngle - Math.PI / 2) * 10);
+  ctx.stroke();
+  // center dot
+  ctx.fillStyle = '#4a3a2a';
+  ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawWallBookshelf(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // shelf frame
+  ctx.fillStyle = '#4a3020';
+  ctx.fillRect(-22, -24, 44, 48);
+  ctx.strokeStyle = '#6a4a2a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-22, -24, 44, 48);
+  // shelves
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(-20, -8, 40, 2);
+  ctx.fillRect(-20, 8, 40, 2);
+  // books on each shelf
+  const bookColors = ['#8a3030', '#3060a0', '#308050', '#7a6020', '#5030a0', '#a05020', '#206060'];
+  for (let shelf = 0; shelf < 3; shelf++) {
+    const shelfY = -22 + shelf * 16;
+    let bx = -18;
+    for (let b = 0; b < 6; b++) {
+      const bw = 4 + Math.sin(shelf * 3 + b * 7) * 2;
+      const bh = 12 + Math.sin(shelf * 5 + b * 3) * 2;
+      ctx.fillStyle = bookColors[(shelf * 3 + b) % bookColors.length];
+      ctx.fillRect(bx, shelfY + (14 - bh), bw, bh);
+      bx += bw + 1;
+      if (bx > 16) break;
+    }
+  }
+  ctx.restore();
+}
+
+function drawBench(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  // bench seat (top-down: dark wood rectangle)
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(-16, -5, 32, 10);
+  // wood grain lines
+  ctx.strokeStyle = 'rgba(90, 60, 30, 0.6)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(-14, -2); ctx.lineTo(14, -2);
+  ctx.moveTo(-14, 2); ctx.lineTo(14, 2);
+  ctx.stroke();
+  // legs (4 corners, small dark squares)
+  ctx.fillStyle = '#3a2210';
+  ctx.fillRect(-15, -4, 3, 3);
+  ctx.fillRect(12, -4, 3, 3);
+  ctx.fillRect(-15, 1, 3, 3);
+  ctx.fillRect(12, 1, 3, 3);
+  // armrests
+  ctx.fillStyle = '#4a2a10';
+  ctx.fillRect(-17, -6, 4, 12);
+  ctx.fillRect(13, -6, 4, 12);
+  ctx.restore();
+}
+
 function drawExitStairs(x, y) {
   ctx.save();
   ctx.translate(x, y);
@@ -2119,6 +2651,22 @@ function draw() {
   for (const door of game.doors) {
     const ds = worldToScreen(door.x * TILE, door.y * TILE, camera);
     drawDoor(ds.x, ds.y, door.w * TILE, door.h * TILE, door, theme);
+    // draw spacebar prompt if player is near a closed door
+    if (door.showPrompt && !door.open) {
+      const promptX = ds.x + (door.w * TILE) / 2;
+      const promptY = ds.y - 16;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(promptX - 48, promptY - 14, 96, 22);
+      ctx.strokeStyle = '#ffd740';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(promptX - 48, promptY - 14, 96, 22);
+      ctx.fillStyle = '#ffd740';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(door.locked && !game.hasKey ? 'LOCKED' : '[SPACE] Open', promptX, promptY + 1);
+      ctx.restore();
+    }
   }
 
   const exitPoint = worldToScreen(game.activeMap.exit.x * TILE, game.activeMap.exit.y * TILE, camera);
@@ -2319,7 +2867,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.fillText(`Level ${game.mapIndex + 1}: ${game.activeMap.name}`, 26, 38);
   ctx.font = '13px sans-serif';
-  ctx.fillText('Reach STAIRS to ascend', 26, 55);
+  ctx.fillText('SPACE to open doors · Reach STAIRS', 26, 55);
   // key status indicator
   if (game.keyPickup) {
     ctx.fillStyle = game.hasKey ? '#ffd740' : '#666';
@@ -2474,7 +3022,7 @@ function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
   ctx.shadowBlur = 0;
 
   // Preview panel background
-  const prevH = Math.round(cardH * 0.44);
+  const prevH = Math.round(cardH * 0.30);
   csRoundRect(cardX + 4, cardY + 4, cardW - 8, prevH, 7);
   ctx.fillStyle = isHovered ? 'rgba(30,45,65,0.55)' : 'rgba(14,20,34,0.6)';
   ctx.fill();
@@ -2520,7 +3068,7 @@ function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
   ];
 
   stats.forEach((s, si) => {
-    const sy = statsTop + si * Math.round(cardH * 0.1);
+    const sy = statsTop + si * Math.round(cardH * 0.07);
     ctx.fillStyle = '#6677aa';
     ctx.font = `${fsS}px monospace`;
     ctx.textAlign = 'left';
@@ -2533,7 +3081,7 @@ function drawCharCard(cd, cardX, cardY, cardW, cardH, isHovered) {
   });
 
   // Description
-  const descTop = statsTop + 3 * Math.round(cardH * 0.1) + 8;
+  const descTop = statsTop + 3 * Math.round(cardH * 0.07) + 8;
   ctx.fillStyle = '#667788';
   const fsDesc = Math.max(9, Math.round(cardW * 0.065));
   ctx.font = `${fsDesc}px monospace`;
@@ -3129,6 +3677,11 @@ window.addEventListener('keydown', (e) => {
     game.objectiveMode = game.objectiveMode === 'purge' ? 'speedrun' : 'purge';
     game.message = `Objective mode: ${game.objectiveMode === 'purge' ? 'Purge' : 'Speedrun'}`;
     syncSettingsInputs();
+  }
+
+  if (key === ' ') {
+    e.preventDefault();
+    game.doorInteract = true;
   }
 
   if (key === game.keybinds.reload) reloadWeapon();

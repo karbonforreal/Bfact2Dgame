@@ -88,81 +88,81 @@ const CHARACTER_DEFS = [
 ];
 
 const WEAPONS = {
-  blaster: {
-    name: 'Blaster',
+  knife: {
+    name: 'Knife',
     slot: '1',
-    cooldown: 0.16,
-    damage: 22,
-    projectileSpeed: 720,
-    spread: 0.08,
-    magazineSize: 12,
-    reloadTime: 1.2,
+    cooldown: 0.3,
+    damage: 50,
+    range: 70,
+    arc: Math.PI * 0.53
+  },
+  handgun: {
+    name: 'Handgun',
+    slot: '2',
+    cooldown: 0.35,
+    damage: 28,
+    projectileSpeed: 780,
+    spread: 0.03,
+    magazineSize: 15,
+    reloadTime: 1.5,
     reserveAmmo: 60,
-    ammoPickupType: 'ammo-blaster',
+    ammoPickupType: 'ammo-handgun',
     ammoPickupValue: 15
   },
   shotgun: {
     name: 'Shotgun',
-    slot: '2',
-    cooldown: 0.55,
-    damage: 14,
-    projectileSpeed: 640,
-    spread: 0.34,
-    pelletCount: 5,
-    magazineSize: 2,
-    reloadTime: 1.95,
-    reserveAmmo: 12,
-    maxDistance: TILE * 3,
+    slot: '3',
+    cooldown: 0.65,
+    damage: 16,
+    projectileSpeed: 560,
+    spread: 0.30,
+    pelletCount: 8,
+    magazineSize: 8,
+    reloadTime: 2.2,
+    reserveAmmo: 32,
+    maxDistance: TILE * 4,
     ammoPickupType: 'ammo-shotgun',
-    ammoPickupValue: 4
+    ammoPickupValue: 8
+  },
+  machinegun: {
+    name: 'Machine Gun',
+    slot: '4',
+    cooldown: 0.075,
+    damage: 12,
+    projectileSpeed: 880,
+    spread: 0.12,
+    magazineSize: 40,
+    reloadTime: 2.5,
+    reserveAmmo: 160,
+    ammoPickupType: 'ammo-machinegun',
+    ammoPickupValue: 40
   },
   sniper: {
-    name: 'Sniper',
-    slot: '3',
-    cooldown: 0.95,
-    damage: 65,
-    projectileSpeed: 1200,
-    spread: 0.015,
-    magazineSize: 3,
-    reloadTime: 2.5,
-    reserveAmmo: 15,
-    pierceCount: 3,
-    ammoPickupType: 'ammo-sniper',
-    ammoPickupValue: 3
-  },
-  knife: {
-    name: 'Knife',
-    slot: '4',
-    cooldown: 0.32,
-    damage: 38,
-    range: 74,
-    arc: Math.PI * 0.48
-  },
-  plasma: {
-    name: 'Plasma Rifle',
+    name: 'Sniper Rifle',
     slot: '5',
-    cooldown: 0.09,
-    damage: 16,
-    projectileSpeed: 850,
-    spread: 0.06,
-    magazineSize: 25,
-    reloadTime: 1.7,
-    reserveAmmo: 100,
-    ammoPickupType: 'ammo-plasma',
-    ammoPickupValue: 25
+    cooldown: 1.2,
+    damage: 95,
+    projectileSpeed: 1500,
+    spread: 0.006,
+    magazineSize: 5,
+    reloadTime: 3.0,
+    reserveAmmo: 20,
+    pierceCount: 2,
+    ammoPickupType: 'ammo-sniper',
+    ammoPickupValue: 5
   },
-  railgun: {
-    name: 'Railgun',
+  rocket: {
+    name: 'Rocket Launcher',
     slot: '6',
-    cooldown: 2.2,
-    damage: 130,
-    projectileSpeed: 2000,
-    spread: 0,
+    cooldown: 0.8,
+    damage: 140,
+    projectileSpeed: 380,
+    spread: 0.02,
     magazineSize: 1,
-    reloadTime: 3.2,
-    reserveAmmo: 6,
-    pierceCount: 10,
-    ammoPickupType: 'ammo-railgun',
+    reloadTime: 4.0,
+    reserveAmmo: 5,
+    pierceCount: 4,
+    ammoPickupType: 'ammo-rocket',
     ammoPickupValue: 2
   }
 };
@@ -256,7 +256,7 @@ const maps = [
       { x: 4, y: 16, hp: 55 }
     ],
     pickups: [
-      { x: 3.5, y: 3.5, type: 'ammo-blaster', value: 15 },
+      { x: 3.5, y: 3.5, type: 'ammo-handgun', value: 15 },
       { x: 14.5, y: 10.5, type: 'health', value: 20 },
       { x: 25.5, y: 10.5, type: 'armor', value: 20 }
     ],
@@ -315,7 +315,7 @@ const maps = [
       { x: 6, y: 18, hp: 50, type: 'dog' }
     ],
     pickups: [
-      { x: 2.5, y: 18.5, type: 'ammo-blaster', value: 20 },
+      { x: 2.5, y: 18.5, type: 'ammo-handgun', value: 20 },
       { x: 26.5, y: 1.5, type: 'health', value: 25 },
       { x: 7.5, y: 4.5, type: 'health', value: 20 },
       { x: 16.5, y: 13.5, type: 'ammo-shotgun', value: 4 },
@@ -381,7 +381,7 @@ const maps = [
       { x: 2.5, y: 20.5, type: 'ammo-sniper', value: 3 },
       { x: 17.5, y: 3.5, type: 'health', value: 25 },
       { x: 17.5, y: 19.5, type: 'armor', value: 35 },
-      { x: 28.5, y: 3.5, type: 'ammo-blaster', value: 15 }
+      { x: 28.5, y: 3.5, type: 'ammo-handgun', value: 15 }
     ],
     spawn: { x: 5.5, y: 3.5 },
     exit: { x: 28.5, y: 20.5 }
@@ -404,12 +404,12 @@ const game = {
     reload: 'r',
     pause: 'p',
     objectiveToggle: 'g',
-    weapon1: WEAPONS.blaster.slot,
-    weapon2: WEAPONS.shotgun.slot,
-    weapon3: WEAPONS.sniper.slot,
-    weapon4: WEAPONS.knife.slot,
-    weapon5: WEAPONS.plasma.slot,
-    weapon6: WEAPONS.railgun.slot
+    weapon1: WEAPONS.knife.slot,
+    weapon2: WEAPONS.handgun.slot,
+    weapon3: WEAPONS.shotgun.slot,
+    weapon4: WEAPONS.machinegun.slot,
+    weapon5: WEAPONS.sniper.slot,
+    weapon6: WEAPONS.rocket.slot
   },
   difficulty: {
     hpScale: 1,
@@ -428,15 +428,16 @@ const game = {
     speed: 280,
     fireCooldown: 0,
     angle: 0,
-    activeWeapon: 'blaster',
+    activeWeapon: 'handgun',
     ammo: {
-      blaster: { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo },
+      handgun: { mag: WEAPONS.handgun.magazineSize, reserve: WEAPONS.handgun.reserveAmmo },
       shotgun: { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo },
+      machinegun: { mag: WEAPONS.machinegun.magazineSize, reserve: WEAPONS.machinegun.reserveAmmo },
       sniper: { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo },
-      plasma: { mag: WEAPONS.plasma.magazineSize, reserve: WEAPONS.plasma.reserveAmmo },
-      railgun: { mag: WEAPONS.railgun.magazineSize, reserve: WEAPONS.railgun.reserveAmmo }
+      rocket: { mag: WEAPONS.rocket.magazineSize, reserve: WEAPONS.rocket.reserveAmmo }
     },
     reloading: 0,
+    reloadingWeapon: null,
     invulnerable: 0,
     walkCycle: 0,
     moving: false,
@@ -449,6 +450,7 @@ const game = {
   pickups: [],
   doors: [],
   hasKey: false,
+  startGrace: 0,
   keys: new Set(),
   mouse: { x: canvas.width / 2, y: canvas.height / 2, down: false },
   activeMap: null,
@@ -506,6 +508,15 @@ function startMap(index, keepPlayerState = true) {
   const hp = keepPlayerState ? Math.max(prev.hp, 30) : prev.maxHp;
   const armor = keepPlayerState ? prev.armor : (prev.charDef ? prev.charDef.armor : 40);
 
+  // Initialize doors first so nav grid used for spawn placement is correct
+  game.doors = (map.doors || []).map((d, i) => ({
+    ...d,
+    id: `${index}-door-${i}`,
+    open: false,
+    openAnim: 0
+  }));
+  game.navGridCache.clear();
+
   const playerSpawn = findNearestOpenPoint(map.spawn.x * TILE, map.spawn.y * TILE, PLAYER_RADIUS);
 
   game.player = {
@@ -515,29 +526,30 @@ function startMap(index, keepPlayerState = true) {
     hp,
     armor,
     ammo: {
-      blaster: {
-        mag: keepPlayerState ? Math.min(prev.ammo.blaster.mag, WEAPONS.blaster.magazineSize) : WEAPONS.blaster.magazineSize,
-        reserve: keepPlayerState ? prev.ammo.blaster.reserve : WEAPONS.blaster.reserveAmmo
+      handgun: {
+        mag: keepPlayerState ? Math.min((prev.ammo.handgun || {}).mag || 0, WEAPONS.handgun.magazineSize) : WEAPONS.handgun.magazineSize,
+        reserve: keepPlayerState ? ((prev.ammo.handgun || {}).reserve || WEAPONS.handgun.reserveAmmo) : WEAPONS.handgun.reserveAmmo
       },
       shotgun: {
-        mag: keepPlayerState ? Math.min(prev.ammo.shotgun.mag, WEAPONS.shotgun.magazineSize) : WEAPONS.shotgun.magazineSize,
-        reserve: keepPlayerState ? prev.ammo.shotgun.reserve : WEAPONS.shotgun.reserveAmmo
+        mag: keepPlayerState ? Math.min((prev.ammo.shotgun || {}).mag || 0, WEAPONS.shotgun.magazineSize) : WEAPONS.shotgun.magazineSize,
+        reserve: keepPlayerState ? ((prev.ammo.shotgun || {}).reserve || WEAPONS.shotgun.reserveAmmo) : WEAPONS.shotgun.reserveAmmo
+      },
+      machinegun: {
+        mag: keepPlayerState ? Math.min((prev.ammo.machinegun || {}).mag || 0, WEAPONS.machinegun.magazineSize) : WEAPONS.machinegun.magazineSize,
+        reserve: keepPlayerState ? ((prev.ammo.machinegun || {}).reserve || WEAPONS.machinegun.reserveAmmo) : WEAPONS.machinegun.reserveAmmo
       },
       sniper: {
-        mag: keepPlayerState ? Math.min(prev.ammo.sniper.mag, WEAPONS.sniper.magazineSize) : WEAPONS.sniper.magazineSize,
-        reserve: keepPlayerState ? prev.ammo.sniper.reserve : WEAPONS.sniper.reserveAmmo
+        mag: keepPlayerState ? Math.min((prev.ammo.sniper || {}).mag || 0, WEAPONS.sniper.magazineSize) : WEAPONS.sniper.magazineSize,
+        reserve: keepPlayerState ? ((prev.ammo.sniper || {}).reserve || WEAPONS.sniper.reserveAmmo) : WEAPONS.sniper.reserveAmmo
       },
-      plasma: {
-        mag: keepPlayerState ? Math.min(prev.ammo.plasma.mag, WEAPONS.plasma.magazineSize) : WEAPONS.plasma.magazineSize,
-        reserve: keepPlayerState ? prev.ammo.plasma.reserve : WEAPONS.plasma.reserveAmmo
-      },
-      railgun: {
-        mag: keepPlayerState ? Math.min(prev.ammo.railgun.mag, WEAPONS.railgun.magazineSize) : WEAPONS.railgun.magazineSize,
-        reserve: keepPlayerState ? prev.ammo.railgun.reserve : WEAPONS.railgun.reserveAmmo
+      rocket: {
+        mag: keepPlayerState ? Math.min((prev.ammo.rocket || {}).mag || 0, WEAPONS.rocket.magazineSize) : WEAPONS.rocket.magazineSize,
+        reserve: keepPlayerState ? ((prev.ammo.rocket || {}).reserve || WEAPONS.rocket.reserveAmmo) : WEAPONS.rocket.reserveAmmo
       }
     },
     fireCooldown: 0,
     reloading: 0,
+    reloadingWeapon: null,
     invulnerable: 0.4,
     walkCycle: prev.walkCycle || 0,
     moving: false,
@@ -557,8 +569,8 @@ function startMap(index, keepPlayerState = true) {
       playerSpawn.x,
       playerSpawn.y
     );
-    // Enforce minimum spawn distance from player (8 tiles)
-    const MIN_ENEMY_SPAWN_DIST = 10 * TILE;
+    // Enforce minimum spawn distance from player (14 tiles)
+    const MIN_ENEMY_SPAWN_DIST = 14 * TILE;
     const spawnDist = Math.hypot(safeSpawn.x - playerSpawn.x, safeSpawn.y - playerSpawn.y);
     if (spawnDist < MIN_ENEMY_SPAWN_DIST) {
       const origin = worldToTile(playerSpawn.x, playerSpawn.y);
@@ -625,13 +637,7 @@ function startMap(index, keepPlayerState = true) {
   game.enemyBullets = [];
   game.muzzleFlashes = [];
 
-  // initialize doors (closed) and key
-  game.doors = (map.doors || []).map((d, i) => ({
-    ...d,
-    id: `${index}-door-${i}`,
-    open: false,
-    openAnim: 0
-  }));
+  // doors already initialized above (before enemy spawn to get correct nav grid)
   game.hasKey = false;
   game.keyPickup = map.keyPickup ? {
     x: map.keyPickup.x * TILE,
@@ -639,6 +645,7 @@ function startMap(index, keepPlayerState = true) {
     alive: true
   } : null;
 
+  game.startGrace = 2.5;
   game.message = `Map loaded: ${map.name} · Threat ${game.difficulty.label}`;
 }
 
@@ -647,13 +654,15 @@ function resetRun(lostRound = false) {
   game.paused = false;
   game.killCount = 0;
   game.hasKey = false;
+  game.player.reloading = 0;
+  game.player.reloadingWeapon = null;
   game.player.hp = game.player.maxHp;
   game.player.armor = game.player.charDef ? game.player.charDef.armor : 40;
-  game.player.ammo.blaster = { mag: WEAPONS.blaster.magazineSize, reserve: WEAPONS.blaster.reserveAmmo };
+  game.player.ammo.handgun = { mag: WEAPONS.handgun.magazineSize, reserve: WEAPONS.handgun.reserveAmmo };
   game.player.ammo.shotgun = { mag: WEAPONS.shotgun.magazineSize, reserve: WEAPONS.shotgun.reserveAmmo };
+  game.player.ammo.machinegun = { mag: WEAPONS.machinegun.magazineSize, reserve: WEAPONS.machinegun.reserveAmmo };
   game.player.ammo.sniper = { mag: WEAPONS.sniper.magazineSize, reserve: WEAPONS.sniper.reserveAmmo };
-  game.player.ammo.plasma = { mag: WEAPONS.plasma.magazineSize, reserve: WEAPONS.plasma.reserveAmmo };
-  game.player.ammo.railgun = { mag: WEAPONS.railgun.magazineSize, reserve: WEAPONS.railgun.reserveAmmo };
+  game.player.ammo.rocket = { mag: WEAPONS.rocket.magazineSize, reserve: WEAPONS.rocket.reserveAmmo };
   startMap(0, false);
 }
 
@@ -835,6 +844,7 @@ function enemyCanSeePlayer(enemy, player) {
 }
 
 function updateEnemyAwareness(enemy, player) {
+  if (game.startGrace > 0) return;
   if (enemy.type === 'dog') {
     if (!enemy.alerted) {
       // Dogs detect by proximity (scent range) rather than instant alert
@@ -1004,15 +1014,15 @@ function performKnifeAttack() {
   }
 }
 
-function spawnMuzzleFlash(x, y, angle, color = '#a9f8ff') {
+function spawnMuzzleFlash(x, y, angle, color = '#a9f8ff', large = false) {
   game.muzzleFlashes.push({
     x,
     y,
     angle,
     color,
-    life: 0.08,
-    maxLife: 0.08,
-    size: 10 + Math.random() * 5
+    life: large ? 0.14 : 0.08,
+    maxLife: large ? 0.14 : 0.08,
+    size: large ? 22 + Math.random() * 8 : 10 + Math.random() * 5
   });
 }
 
@@ -1022,7 +1032,7 @@ function shootPlayerWeapon() {
 
   if (p.activeWeapon === 'knife') {
     p.fireCooldown = WEAPONS.knife.cooldown;
-    p.knifeAnim = 0.16;
+    p.knifeAnim = 0.3;
     performKnifeAttack();
     return;
   }
@@ -1053,16 +1063,18 @@ function shootPlayerWeapon() {
     });
   }
 
-  const flashColor = p.activeWeapon === 'sniper' ? '#ff6d6d'
-    : p.activeWeapon === 'shotgun' ? '#ffd58f'
-    : p.activeWeapon === 'plasma' ? '#b06dff'
-    : p.activeWeapon === 'railgun' ? '#00ffcc'
+  const flashColor = p.activeWeapon === 'sniper' ? '#ff4444'
+    : p.activeWeapon === 'shotgun' ? '#ff9a3c'
+    : p.activeWeapon === 'machinegun' ? '#a0f0ff'
+    : p.activeWeapon === 'rocket' ? '#ff6a00'
+    : p.activeWeapon === 'handgun' ? '#fff5a0'
     : '#9bf7ff';
   spawnMuzzleFlash(
     p.x + Math.cos(p.angle) * 26,
     p.y + Math.sin(p.angle) * 26,
     p.angle,
-    flashColor
+    flashColor,
+    p.activeWeapon === 'rocket'
   );
 }
 
@@ -1106,6 +1118,7 @@ function reloadWeapon() {
   if (p.reloading > 0 || ammo.mag >= weapon.magazineSize || ammo.reserve <= 0) return;
 
   p.reloading = weapon.reloadTime;
+  p.reloadingWeapon = p.activeWeapon;
   game.message = `Reloading ${weapon.name}...`;
 }
 
@@ -1120,15 +1133,19 @@ function update(dt) {
   p.reloading = Math.max(0, p.reloading - dt);
   p.invulnerable = Math.max(0, p.invulnerable - dt);
   p.knifeAnim = Math.max(0, p.knifeAnim - dt);
+  game.startGrace = Math.max(0, game.startGrace - dt);
 
-  const currentAmmo = ammoState();
-  const weapon = currentWeapon();
-  if (weapon && currentAmmo && p.reloading === 0 && currentAmmo.mag < weapon.magazineSize && game.message.startsWith('Reloading')) {
-    const needed = weapon.magazineSize - currentAmmo.mag;
-    const used = Math.min(needed, currentAmmo.reserve);
-    currentAmmo.mag += used;
-    currentAmmo.reserve -= used;
-    game.message = `${weapon.name} reloaded.`;
+  if (p.reloadingWeapon && p.reloading === 0) {
+    const reloadWep = WEAPONS[p.reloadingWeapon];
+    const reloadAmmo = p.ammo[p.reloadingWeapon];
+    if (reloadWep && reloadAmmo) {
+      const needed = reloadWep.magazineSize - reloadAmmo.mag;
+      const used = Math.min(needed, reloadAmmo.reserve);
+      reloadAmmo.mag += used;
+      reloadAmmo.reserve -= used;
+      game.message = `${reloadWep.name} reloaded.`;
+    }
+    p.reloadingWeapon = null;
   }
 
   let mx = 0;
@@ -1962,32 +1979,45 @@ function drawAmmoPickupIcon(x, y, ammoType) {
     ctx.fill();
     ctx.fillStyle = '#f6f8ff';
     ctx.fillRect(-1, 4, 2, 3);
-  } else if (ammoType === 'ammo-plasma') {
-    // plasma orb icon
-    ctx.fillStyle = '#7b2dcc';
-    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#e0aaff';
-    ctx.beginPath(); ctx.arc(-1.5, -2, 2.5, 0, Math.PI * 2); ctx.fill();
-  } else if (ammoType === 'ammo-railgun') {
-    // rail slug icon — long thin rectangle
-    ctx.fillStyle = '#007a60';
-    ctx.fillRect(-7, -2, 14, 4);
-    ctx.fillStyle = '#00ffcc';
-    ctx.fillRect(-7, -1, 14, 2);
-    ctx.fillStyle = '#c0fff2';
-    ctx.fillRect(-7, -1, 3, 2);
+  } else if (ammoType === 'ammo-machinegun') {
+    // machine gun — linked ammo belt icon
+    const links = [-6, -2, 2, 6];
+    for (const lx of links) {
+      ctx.fillStyle = '#3a4a5a';
+      ctx.fillRect(lx - 1.5, -4, 3, 8);
+      ctx.fillStyle = '#7de8ff';
+      ctx.fillRect(lx - 1, -3.5, 2, 1.5);
+    }
+    ctx.fillStyle = '#5a7090';
+    ctx.fillRect(-8, -1, 16, 2);
+  } else if (ammoType === 'ammo-rocket') {
+    // rocket icon — warhead + body
+    ctx.fillStyle = '#8a3010';
+    ctx.fillRect(-6, -2.5, 10, 5);
+    ctx.fillStyle = '#ff6a00';
+    ctx.beginPath();
+    ctx.moveTo(4, -2.5);
+    ctx.lineTo(4, 2.5);
+    ctx.lineTo(9, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffb060';
+    ctx.fillRect(-6, -1, 4, 2);
+    ctx.fillStyle = '#3a1808';
+    ctx.fillRect(-9, -3, 3, 6);
   } else {
-    const bulletOffsets = [-5, 0, 5];
+    // handgun — compact pistol bullets
+    const bulletOffsets = [-4.5, 0, 4.5];
     for (const offset of bulletOffsets) {
       ctx.fillStyle = '#2a3442';
-      ctx.fillRect(offset - 2.2, -5, 4.4, 8.4);
-      ctx.fillStyle = '#f5f8ff';
-      ctx.fillRect(offset - 1.2, -4.2, 2.4, 6.8);
-      ctx.fillStyle = '#d17a23';
+      ctx.fillRect(offset - 2, -5, 4, 8);
+      ctx.fillStyle = '#f0efdc';
+      ctx.fillRect(offset - 1.2, -4.5, 2.4, 6);
+      ctx.fillStyle = '#e8a020';
       ctx.beginPath();
-      ctx.moveTo(offset - 1.2, -4.2);
-      ctx.lineTo(offset + 1.2, -4.2);
-      ctx.lineTo(offset, -7.4);
+      ctx.moveTo(offset - 1.2, -4.5);
+      ctx.lineTo(offset + 1.2, -4.5);
+      ctx.lineTo(offset, -7.5);
       ctx.closePath();
       ctx.fill();
     }
@@ -2053,11 +2083,11 @@ function draw() {
   for (const pickup of game.pickups) {
     if (!pickup.alive) continue;
     const s = worldToScreen(pickup.x, pickup.y, camera);
-    if (pickup.type === 'ammo-blaster') ctx.fillStyle = '#f1af3a';
+    if (pickup.type === 'ammo-handgun') ctx.fillStyle = '#f5e26a';
     if (pickup.type === 'ammo-shotgun') ctx.fillStyle = '#ff7d57';
     if (pickup.type === 'ammo-sniper') ctx.fillStyle = '#ff5470';
-    if (pickup.type === 'ammo-plasma') ctx.fillStyle = '#c06dff';
-    if (pickup.type === 'ammo-railgun') ctx.fillStyle = '#00e8bb';
+    if (pickup.type === 'ammo-machinegun') ctx.fillStyle = '#7de8ff';
+    if (pickup.type === 'ammo-rocket') ctx.fillStyle = '#ff6a00';
     if (pickup.type === 'health') ctx.fillStyle = '#7bff9f';
     if (pickup.type === 'armor') ctx.fillStyle = '#7bf9ff';
     ctx.fillRect(s.x - 10, s.y - 10, 20, 20);
@@ -2113,10 +2143,46 @@ function draw() {
 
   for (const bullet of game.bullets) {
     const s = worldToScreen(bullet.x, bullet.y, camera);
-    ctx.fillStyle = bullet.weapon === 'sniper' ? '#ff5f5f' : bullet.weapon === 'shotgun' ? '#ffd9a1' : '#79e8ff';
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    if (bullet.weapon === 'rocket') {
+      // Rocket — large elongated warhead with trail
+      const ang = Math.atan2(bullet.vy, bullet.vx);
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = '#ff6a00';
+      ctx.fillRect(-10, -4, 18, 8);
+      ctx.fillStyle = '#ffb060';
+      ctx.fillRect(6, -2.5, 5, 5);
+      ctx.fillStyle = 'rgba(255,120,0,0.45)';
+      ctx.fillRect(-18, -5, 9, 10);
+      ctx.restore();
+    } else if (bullet.weapon === 'sniper') {
+      const ang = Math.atan2(bullet.vy, bullet.vx);
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = '#ff4444';
+      ctx.fillRect(-9, -1.5, 18, 3);
+      ctx.fillStyle = '#ffaaaa';
+      ctx.fillRect(-9, -0.5, 18, 1);
+      ctx.restore();
+    } else if (bullet.weapon === 'shotgun') {
+      ctx.fillStyle = '#ffd9a1';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (bullet.weapon === 'machinegun') {
+      ctx.fillStyle = '#a0f8ff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // handgun
+      ctx.fillStyle = '#f5e870';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   for (const bullet of game.enemyBullets) {
@@ -2510,8 +2576,8 @@ function drawPlayer(player) {
   const armSwing = player.moving ? Math.sin(player.walkCycle + Math.PI / 2) * 0.4 : 0;
   const recoil = Math.max(0, player.fireCooldown * 34);
   const shirtColor = player.invulnerable > 0 ? '#ffd66e' : cd.shirt;
-  const knifeProgress = player.knifeAnim > 0 ? 1 - player.knifeAnim / 0.16 : 0;
-  const knifeStabOffset = player.activeWeapon === 'knife' ? Math.sin(knifeProgress * Math.PI) * 14 : 0;
+  const knifeProgress = player.knifeAnim > 0 ? 1 - player.knifeAnim / 0.3 : 0;
+  const knifeStabOffset = player.activeWeapon === 'knife' ? Math.sin(knifeProgress * Math.PI) * 16 : 0;
 
   ctx.save();
   ctx.translate(x, y + bob);
@@ -2604,27 +2670,78 @@ function drawPlayer(player) {
   ctx.save();
   ctx.rotate(player.angle);
   if (player.activeWeapon === 'knife') {
-    ctx.fillStyle = '#2a3440';
-    ctx.fillRect(8 + knifeStabOffset * 0.25, -2, 5, 4);
-    ctx.fillStyle = '#dce9f2';
-    ctx.fillRect(12 + knifeStabOffset, -2, 12, 2);
-    ctx.fillRect(12 + knifeStabOffset, 0, 12, 1);
+    // Knife — handle + blade
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(8 + knifeStabOffset * 0.2, -3, 6, 6);
+    ctx.fillStyle = '#8a7060';
+    ctx.fillRect(13 + knifeStabOffset * 0.2, -2, 2, 4);
+    ctx.fillStyle = '#e8eef4';
+    ctx.fillRect(14 + knifeStabOffset, -1.5, 14, 1.5);
+    ctx.fillRect(14 + knifeStabOffset, 0, 12, 1);
+    ctx.fillStyle = '#b0c8e0';
+    ctx.fillRect(26 + knifeStabOffset, -2, 3, 1.5);
+  } else if (player.activeWeapon === 'handgun') {
+    // Handgun — compact semi-auto pistol
+    ctx.fillStyle = '#1e2c38';
+    ctx.fillRect(6 - recoil, -2.5, 14, 5);
+    ctx.fillStyle = '#38495a';
+    ctx.fillRect(7 - recoil, -4.5, 5, 2);
+    ctx.fillStyle = '#2a3a48';
+    ctx.fillRect(8 - recoil, -2, 4, 6);
+    ctx.fillStyle = '#c8d4de';
+    ctx.fillRect(19 - recoil, -1.2, 2, 2.4);
+    ctx.fillStyle = '#f5e26a';
+    ctx.fillRect(20.5 - recoil, -0.6, 1.5, 1.2);
   } else if (player.activeWeapon === 'shotgun') {
-    ctx.fillStyle = '#1f2e38';
-    ctx.fillRect(6 - recoil, -3.2, 18, 6.4);
-    ctx.fillStyle = '#7e522f';
-    ctx.fillRect(6 - recoil, -2.2, 9, 4.6);
-    ctx.fillStyle = '#ccd5de';
-    ctx.fillRect(22 - recoil, -1.8, 5, 3.6);
+    // Shotgun — pump-action with wood stock
+    ctx.fillStyle = '#1a2830';
+    ctx.fillRect(6 - recoil, -3.5, 20, 7);
+    ctx.fillStyle = '#7e4a20';
+    ctx.fillRect(6 - recoil, -2.5, 10, 5);
+    ctx.fillStyle = '#5a3418';
+    ctx.fillRect(9 - recoil, 1, 7, 3);
+    ctx.fillStyle = '#b8c8d4';
+    ctx.fillRect(23 - recoil, -2, 5, 4);
+    ctx.fillStyle = '#888';
+    ctx.fillRect(22 - recoil, -1, 1.5, 2);
+  } else if (player.activeWeapon === 'machinegun') {
+    // Machine Gun — long barrel, visible magazine
+    ctx.fillStyle = '#1c2e3c';
+    ctx.fillRect(6 - recoil, -3, 22, 6);
+    ctx.fillStyle = '#2a4050';
+    ctx.fillRect(7 - recoil, -5.5, 7, 2.5);
+    ctx.fillStyle = '#3a5568';
+    ctx.fillRect(14 - recoil, -1.5, 6, 5.5);
+    ctx.fillStyle = '#7de8ff';
+    ctx.fillRect(26 - recoil, -1, 4, 2);
+    ctx.fillStyle = '#a0f8ff';
+    ctx.fillRect(29 - recoil, -0.5, 2, 1);
   } else if (player.activeWeapon === 'sniper') {
-    ctx.fillStyle = '#243648';
-    ctx.fillRect(6 - recoil, -2.4, 25, 4.8);
-    ctx.fillStyle = '#425a73';
-    ctx.fillRect(13 - recoil, -6, 10, 3.4);
-    ctx.fillStyle = '#121921';
-    ctx.fillRect(16 - recoil, -8, 6, 2);
-    ctx.fillStyle = '#ff6565';
-    ctx.fillRect(29 - recoil, -1.2, 3, 2.4);
+    // Sniper Rifle — long with scope
+    ctx.fillStyle = '#1e2e40';
+    ctx.fillRect(5 - recoil, -2.5, 28, 5);
+    ctx.fillStyle = '#2e4558';
+    ctx.fillRect(13 - recoil, -6.5, 11, 4);
+    ctx.fillStyle = '#0a1018';
+    ctx.fillRect(16 - recoil, -8.5, 5, 2);
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(31 - recoil, -1.2, 3, 2.4);
+    ctx.fillStyle = '#aacae0';
+    ctx.fillRect(15 - recoil, -7.5, 3, 1);
+  } else if (player.activeWeapon === 'rocket') {
+    // Rocket Launcher — wide tube on shoulder
+    ctx.fillStyle = '#2a2010';
+    ctx.fillRect(4 - recoil, -5, 24, 10);
+    ctx.fillStyle = '#3a3020';
+    ctx.fillRect(12 - recoil, -6, 8, 3);
+    ctx.fillStyle = '#6a5a3a';
+    ctx.fillRect(4 - recoil, -4, 6, 8);
+    ctx.fillStyle = '#ff8020';
+    ctx.fillRect(27 - recoil, -3.5, 5, 7);
+    ctx.fillStyle = '#ffb060';
+    ctx.fillRect(28 - recoil, -2, 4, 4);
+    ctx.fillStyle = '#ff6a00';
+    ctx.fillRect(30 - recoil, -1, 3, 2);
   } else {
     ctx.fillStyle = '#1f344a';
     ctx.fillRect(8 - recoil, -2.2, 13, 4.4);
@@ -2931,28 +3048,40 @@ window.addEventListener('keydown', (e) => {
 
   if (key === game.keybinds.reload) reloadWeapon();
   if (key === game.keybinds.weapon1) {
-    game.player.activeWeapon = 'blaster';
-    game.message = 'Switched to blaster.';
+    game.player.activeWeapon = 'knife';
+    game.player.reloading = 0;
+    game.player.reloadingWeapon = null;
+    game.message = 'Knife equipped.';
   }
   if (key === game.keybinds.weapon2) {
-    game.player.activeWeapon = 'shotgun';
-    game.message = 'Switched to shotgun.';
+    game.player.activeWeapon = 'handgun';
+    game.player.reloading = 0;
+    game.player.reloadingWeapon = null;
+    game.message = 'Handgun equipped.';
   }
   if (key === game.keybinds.weapon3) {
-    game.player.activeWeapon = 'sniper';
-    game.message = 'Switched to sniper.';
+    game.player.activeWeapon = 'shotgun';
+    game.player.reloading = 0;
+    game.player.reloadingWeapon = null;
+    game.message = 'Shotgun equipped.';
   }
   if (key === game.keybinds.weapon4) {
-    game.player.activeWeapon = 'knife';
-    game.message = 'Switched to knife.';
+    game.player.activeWeapon = 'machinegun';
+    game.player.reloading = 0;
+    game.player.reloadingWeapon = null;
+    game.message = 'Machine Gun equipped.';
   }
   if (key === game.keybinds.weapon5) {
-    game.player.activeWeapon = 'plasma';
-    game.message = 'Switched to Plasma Rifle.';
+    game.player.activeWeapon = 'sniper';
+    game.player.reloading = 0;
+    game.player.reloadingWeapon = null;
+    game.message = 'Sniper Rifle equipped.';
   }
   if (key === game.keybinds.weapon6) {
-    game.player.activeWeapon = 'railgun';
-    game.message = 'Switched to Railgun.';
+    game.player.activeWeapon = 'rocket';
+    game.player.reloading = 0;
+    game.player.reloadingWeapon = null;
+    game.message = 'Rocket Launcher equipped.';
   }
 });
 

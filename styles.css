@@ -372,6 +372,36 @@ body {
   box-shadow: 0 0 14px rgba(80, 240, 255, 0.5);
 }
 
+/* ---------- VIRTUAL AIM STICK ---------- */
+
+.aim-stick-base {
+  display: none;
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 95, 122, 0.45);
+  background: rgba(255, 95, 122, 0.07);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 18px rgba(255, 95, 122, 0.18);
+}
+
+.aim-stick-thumb {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(255, 160, 180, 0.88),
+    rgba(215, 60, 90, 0.68));
+  border: 2px solid rgba(255, 95, 122, 0.75);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 14px rgba(255, 95, 122, 0.5);
+}
+
 /* ---------- ACTION BUTTONS ---------- */
 
 .touch-btn {
@@ -425,6 +455,17 @@ body {
   color: #ffd25c;
 }
 .reload-btn .btn-label { color: rgba(255, 209, 92, 0.7); }
+
+/* Door button — bottom-right, left of reload */
+.door-btn {
+  width: 60px;
+  height: 60px;
+  bottom: 18px;
+  right: 84px;
+  border-color: rgba(120, 200, 255, 0.5);
+  color: #78c8ff;
+}
+.door-btn .btn-label { color: rgba(120, 200, 255, 0.7); }
 
 /* Pause button — top-right corner */
 .pause-btn-touch {

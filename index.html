@@ -27,14 +27,23 @@
           <span class="zone-hint">👈 move</span>
         </div>
 
-        <!-- Right half: drag to aim, tap to shoot -->
-        <div id="aimZone" class="aim-zone" aria-label="Aim and shoot area">
-          <span class="zone-hint">👉 tap / hold = aim &amp; shoot</span>
+        <!-- Right half: virtual aim stick + action buttons -->
+        <div id="aimZone" class="aim-zone" aria-label="Aim joystick area">
+          <!-- Virtual aim joystick graphic (hidden until finger lands) -->
+          <div id="aimStickBase" class="aim-stick-base">
+            <div id="aimStickThumb" class="aim-stick-thumb"></div>
+          </div>
+          <span class="zone-hint">👉 drag to aim &amp; shoot</span>
 
           <!-- Action buttons (positioned inside aim zone) -->
           <button id="btnReload" class="touch-btn reload-btn" aria-label="Reload weapon">
             <span class="btn-icon">↺</span>
             <span class="btn-label">Reload</span>
+          </button>
+
+          <button id="btnDoor" class="touch-btn door-btn" aria-label="Open door">
+            <span class="btn-icon">🚪</span>
+            <span class="btn-label">Door</span>
           </button>
 
           <button id="btnPause" class="touch-btn pause-btn-touch" aria-label="Pause game">
@@ -57,9 +66,9 @@
         <div class="touch-legend" aria-hidden="true">
           <span class="legend-item">← Joystick = Move</span>
           <span class="legend-sep">·</span>
-          <span class="legend-item">→ Tap/Hold = Aim &amp; Shoot</span>
+          <span class="legend-item">→ Aim Stick = Aim &amp; Shoot</span>
           <span class="legend-sep">·</span>
-          <span class="legend-item">↺ Reload &nbsp; ⏸ Pause &nbsp; ▶◀ Swap Weapon</span>
+          <span class="legend-item">↺ Reload &nbsp; 🚪 Door &nbsp; ⏸ Pause &nbsp; ▶◀ Swap Weapon</span>
         </div>
       </div>
 

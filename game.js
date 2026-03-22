@@ -308,8 +308,8 @@ const maps = [
   {
     // Level 2: "Core Archive"
     // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17.
-    // LIBRARY(N x:14-18), SERVER(S x:23-28), ARCHIVE(N x:33-38), STUDY+EXIT(S x:43-50)
-    // ALL door gaps exactly 1 tile wide.
+    // LIBRARY(N x:14-18), SERVER(S x:23-28), ARCHIVE(N x:33-38), STUDY+EXIT(S x:43-50 y:15-24)
+    // ALL door gaps exactly 1 tile wide. Top-right solid x:44-50,y:1-14.
     name: 'Core Archive',
     width: 52, height: 26,
     walls: [
@@ -321,22 +321,23 @@ const maps = [
       // corridor N wall y:10 — gap at x:16 (LIBRARY), gap at x:35 (ARCHIVE)
       [10,10,6,1],[17,10,18,1],[36,10,8,1],
       // corridor S wall y:14 — gap at x:25 (SERVER), gap at x:43 (STUDY)
-      [10,14,15,1],[26,14,17,1],[44,14,1,1],
+      [10,14,15,1],[26,14,17,1],
       // fill above corridor
       [10,1,3,9],                     // x:10-12
       [13,1,1,9],[19,1,1,9],         // LIBRARY side walls
       [20,1,13,9],                    // x:20-32
       [32,1,1,9],[39,1,1,9],         // ARCHIVE side walls
       [40,1,4,9],                     // x:40-43
+      // top-right solid block — seals x:44-50 fully from y:1 to y:14
+      // (no gaps: closes the 1-tile crack at x:44,y:1-9 and the open corridor extension at x:44-50,y:10-14)
+      [44,1,7,14],
       // fill below corridor
       [10,15,13,10],                  // x:10-22
       [22,15,1,10],[29,15,1,10],     // SERVER side walls
       [30,15,13,10],                  // x:30-42
-      // STUDY room x:44-50 y:15-24
-      // locked partition at y:20, gap at x:47
-      [44,20,3,1],[48,20,3,1],
-      // fill top-right
-      [45,1,6,9],
+      // STUDY+EXIT room x:43-50 y:15-24
+      // locked partition at y:20 — spans full room width, door gap only at x:47
+      [43,20,4,1],[48,20,3,1],
     ],
     doors: [
       {x:10,y:12,w:1,h:1,locked:false,orientation:'v',swingDir:1},
@@ -382,8 +383,8 @@ const maps = [
   {
     // Level 3: "Reactor Vault"
     // Corridor y:11-13, x:11-43. Spawn x:1-9 y:8-17.
-    // DECON(N x:14-18), REACTOR(S x:22-28), COOLING(N x:32-38), CONTROL+EXIT(S x:43-50)
-    // ALL door gaps exactly 1 tile wide.
+    // DECON(N x:14-18), REACTOR(S x:22-28), COOLING(N x:32-38), CONTROL+EXIT(S x:43-50 y:15-24)
+    // ALL door gaps exactly 1 tile wide. Top-right solid x:44-50,y:1-14.
     name: 'Reactor Vault',
     width: 52, height: 26,
     walls: [
@@ -395,22 +396,23 @@ const maps = [
       // corridor N wall y:10 — gap at x:16 (DECON), gap at x:35 (COOLING)
       [10,10,6,1],[17,10,18,1],[36,10,8,1],
       // corridor S wall y:14 — gap at x:25 (REACTOR), gap at x:43 (CONTROL)
-      [10,14,15,1],[26,14,17,1],[44,14,1,1],
+      [10,14,15,1],[26,14,17,1],
       // fill above corridor
       [10,1,3,9],
       [13,1,1,9],[19,1,1,9],         // DECON side walls
       [20,1,12,9],
       [31,1,1,9],[39,1,1,9],         // COOLING side walls
       [40,1,4,9],
+      // top-right solid block — seals x:44-50 fully from y:1 to y:14
+      // (no gaps: closes the 1-tile crack at x:44,y:1-9 and the open corridor extension at x:44-50,y:10-14)
+      [44,1,7,14],
       // fill below corridor
       [10,15,12,10],
       [21,15,1,10],[29,15,1,10],     // REACTOR side walls
       [30,15,13,10],
-      // CONTROL+EXIT room x:44-50 y:15-24
-      // locked partition at y:20, gap at x:47
-      [44,20,3,1],[48,20,3,1],
-      // fill top-right
-      [45,1,6,9],
+      // CONTROL+EXIT room x:43-50 y:15-24
+      // locked partition at y:20 — spans full room width, door gap only at x:47
+      [43,20,4,1],[48,20,3,1],
     ],
     doors: [
       {x:10,y:12,w:1,h:1,locked:false,orientation:'v',swingDir:1},

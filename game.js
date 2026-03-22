@@ -3842,12 +3842,15 @@ function initMobileControls() {
   const joystickBase  = document.getElementById('joystickBase');
   const joystickThumb = document.getElementById('joystickThumb');
   const aimZone       = document.getElementById('aimZone');
+  const aimStickBase  = document.getElementById('aimStickBase');
+  const aimStickThumb = document.getElementById('aimStickThumb');
 
   const JOYSTICK_R = 55; // max thumb travel in CSS px
+  const AIM_STICK_R = 55; // max aim stick thumb travel in CSS px
 
   // Per-finger tracking
   const joystick = { id: null, baseX: 0, baseY: 0 };
-  const aim      = { id: null };
+  const aim      = { id: null, baseX: 0, baseY: 0 };
 
   // Helper: handle a tap on the character-select screen.
   // Returns true if the tap was consumed (so zone handlers should bail out).
@@ -3920,28 +3923,63 @@ function initMobileControls() {
   joystickZone.addEventListener('touchend',    joystickEnd, { passive: false });
   joystickZone.addEventListener('touchcancel', joystickEnd, { passive: false });
 
-  // ---- AIM ZONE: touchstart — set aim + begin shooting ----
+  // ---- AIM STICK helpers ----
+  // Project the joystick direction outward from player centre so the
+  // aim angle matches the stick direction regardless of screen position.
+  const AIM_PROJECT_R = 260; // canvas-px distance used to set mouse coords
+
+  function applyAimStick(dx, dy) {
+    // dx/dy are normalised -1…1 from the aim joystick
+    game.mouse.x = canvas.width  / 2 + dx * AIM_PROJECT_R;
+    game.mouse.y = canvas.height / 2 + dy * AIM_PROJECT_R;
+  }
+
+  // ---- AIM ZONE: touchstart — anchor stick + begin shooting ----
   aimZone.addEventListener('touchstart', (e) => {
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (handleCharSelectTouch(t)) return; // let character-select handle it
       if (aim.id !== null) continue;
-      aim.id = t.identifier;
-      const c = touchToCanvas(t);
-      game.mouse.x    = c.x;
-      game.mouse.y    = c.y;
+      aim.id    = t.identifier;
+      aim.baseX = t.clientX;
+      aim.baseY = t.clientY;
+
+      // Place the aim-stick graphic where the finger landed
+      const rect = aimZone.getBoundingClientRect();
+      aimStickBase.style.left    = (t.clientX - rect.left) + 'px';
+      aimStickBase.style.top     = (t.clientY - rect.top)  + 'px';
+      aimStickBase.style.display = 'block';
+      aimStickThumb.style.transform = 'translate(-50%, -50%)';
+
+      // Treat the initial touch as pointing straight right until moved
       game.mouse.down = true;
     }
   }, { passive: false });
 
-  // ---- AIM ZONE: touchmove — update crosshair ----
+  // ---- AIM ZONE: touchmove — update aim direction ----
   aimZone.addEventListener('touchmove', (e) => {
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (t.identifier !== aim.id) continue;
-      const c = touchToCanvas(t);
-      game.mouse.x = c.x;
-      game.mouse.y = c.y;
+      const rawDx = t.clientX - aim.baseX;
+      const rawDy = t.clientY - aim.baseY;
+      const dist  = Math.hypot(rawDx, rawDy);
+      const angle = Math.atan2(rawDy, rawDx);
+      const clamped = Math.min(dist, AIM_STICK_R);
+
+      // Normalised direction
+      const ndx = (clamped / AIM_STICK_R) * Math.cos(angle);
+      const ndy = (clamped / AIM_STICK_R) * Math.sin(angle);
+
+      // Move thumb graphic
+      const tx = Math.cos(angle) * clamped;
+      const ty = Math.sin(angle) * clamped;
+      aimStickThumb.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+
+      // Only update aim when stick is pushed past a small dead zone
+      if (dist > 8) {
+        applyAimStick(ndx, ndy);
+      }
     }
   }, { passive: false });
 
@@ -3952,6 +3990,8 @@ function initMobileControls() {
       if (t.identifier !== aim.id) continue;
       aim.id          = null;
       game.mouse.down = false;
+      aimStickBase.style.display = 'none';
+      aimStickThumb.style.transform = 'translate(-50%, -50%)';
     }
   }
   aimZone.addEventListener('touchend',    aimEnd, { passive: false });
@@ -3982,6 +4022,12 @@ function initMobileControls() {
     e.preventDefault();
     e.stopPropagation();
     cycleWeapon(-1);
+  }, { passive: false });
+
+  document.getElementById('btnDoor').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    game.doorInteract = true;
   }, { passive: false });
 }
 
